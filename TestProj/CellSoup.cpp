@@ -44,22 +44,22 @@ void CellSoup::find_neighbors()
 	tile *cur;
 	for (int i = 0; i < tiles.size(); i++) {
 		cur = &tiles[i];
-		bool down = (cur->row == 0), top = (cur->row == rows - 1), left = (cur->col%cols == 0), right = (cur->col%cols == cols - 1), offset = ((rows - cur->row - 1) % 2) == 1;
+		bool down = (cur->row == 0), top = (cur->row == rows - 1), right = (cur->col%cols == 0), left = (cur->col%cols == cols - 1), offset = ((rows - cur->row) % 2) == 0;
 
 		int n_col, n_row;
 
 		//Direction 'Right'
 		n_row = cur->row;
-		if (right) n_col = 0;
-		else n_col = cur->col + 1;
+		if (right) n_col = cols - 1;
+		else n_col = cur->col - 1;
 		cur->neighbors[0] = &tiles[n_col + n_row*cols];
 
 		//Direction 'Down-Right', 'Down-Left'
 		if (down) n_row = rows - 1;
 		else n_row = cur->row - 1;
 		if (offset) {
-			if (right) n_col = 0;
-			else n_col = cur->col + 1;
+			if (right) n_col = cols - 1;
+			else n_col = cur->col - 1;
 			cur->neighbors[1] = &tiles[n_col + n_row*cols];
 			n_col = cur->col;
 			cur->neighbors[2] = &tiles[n_col + n_row*cols];
@@ -67,16 +67,16 @@ void CellSoup::find_neighbors()
 		else {
 			n_col = cur->col;
 			cur->neighbors[1] = &tiles[n_col + n_row*cols];
-			if (left) n_col = cols - 1;
-			else n_col = cur->col - 1;
+			if (left) n_col = 0;
+			else n_col = cur->col + 1;
 			cur->neighbors[2] = &tiles[n_col + n_row*cols];
 		}
 
 		//Direction 'Left'
 
 		n_row = cur->row;
-		if (left) n_col = cols - 1;
-		else n_col = cur->col - 1;
+		if (left) n_col = 0;
+		else n_col = cur->col + 1;
 		cur->neighbors[3] = &tiles[n_col + n_row*cols];
 
 		//Directions 'Up-Left' and 'Up-Right'
@@ -85,13 +85,13 @@ void CellSoup::find_neighbors()
 		if (offset) {
 			n_col = cur->col;
 			cur->neighbors[4] = &tiles[n_col + n_row*cols];
-			if (right) n_col = 0;
-			else n_col = cur->col + 1;
+			if (right) n_col = cols - 1;
+			else n_col = cur->col - 1;
 			cur->neighbors[5] = &tiles[n_col + n_row*cols];
 		}
 		else {
-			if (left) n_col = cols - 1;
-			else n_col = cur->col - 1;
+			if (left) n_col = 0;
+			else n_col = cur->col + 1;
 			cur->neighbors[4] = &tiles[n_col + n_row*cols];
 			n_col = cur->col;
 			cur->neighbors[5] = &tiles[n_col + n_row*cols];
@@ -235,18 +235,22 @@ int CellSoup::get_radiation(unsigned int ctr)
 	return tiles[ctr].radiation_lvl;
 }
 
-void CellSoup::make_cell(tile *position, int *DNA, int *feno, int energy) {
+void CellSoup::make_cell(tile *position, int dir, int *DNA, int *feno, int energy, int type) {
 	cell *cur;
 	for (int i = 0; i < cells.size(); i++) {
 		if (cells[i].energy == 0) {		//Ищем пустышку
 			cur = &cells[i];
 			cur->ctr = i;
 
-			cur->dest = 0;
+			cur->dest = dir;
 			cur->energy = energy;
+			if (type == 0) cur->sun++;
+			else
+				if (type == 1) cur->meat++;
+				else cur->minerals++;
 			cur->meat = 1;
 			cur->minerals = 1;
-			cur->sun = 2;
+			cur->sun = 1;
 			cur->craw = 0;
 			cur->err_ctr = 0;
 			cur->position = position;
@@ -304,6 +308,34 @@ void CellSoup::tile_color_chаnge(tile* cur) {
 			R = (double)cells[cur->cell].meat / (double)(cells[cur->cell].meat + cells[cur->cell].sun + cells[cur->cell].minerals) * 255;
 			G = (double)cells[cur->cell].sun / (double)(cells[cur->cell].meat + cells[cur->cell].sun + cells[cur->cell].minerals) * 255;
 			B = (double)cells[cur->cell].minerals / (double)(cells[cur->cell].meat + cells[cur->cell].sun + cells[cur->cell].minerals) * 255;
+			/*
+			if ((R > G) && (R > B)) {
+				float k = 255 / R;
+				R *= k;
+				G *= k;
+				B *= k;
+			}
+			else {
+				if ((B > G) && (B > R)) {
+					float k = 255 / B;
+					R *= k;
+					G *= k;
+					B *= k;
+				}
+				else {
+					float k = 255 / G;
+					R *= k;
+					G *= k;
+					B *= k;
+				}
+			}
+			R = (double)cells[cur->cell].meat / sqrt(pow(cells[cur->cell].meat, 2) + pow(cells[cur->cell].sun, 2) + pow(cells[cur->cell].minerals, 2)) * 255;
+			G = (double)cells[cur->cell].sun / sqrt(pow(cells[cur->cell].meat, 2) + pow(cells[cur->cell].sun, 2) + pow(cells[cur->cell].minerals, 2)) * 255;
+			B = (double)cells[cur->cell].minerals / sqrt(pow(cells[cur->cell].meat, 2) + pow(cells[cur->cell].sun, 2) + pow(cells[cur->cell].minerals, 2)) * 255;
+			*/
+			R %= 256;
+			G %= 256;
+			B %= 256;
 		}
 		else {
 			G = 0;
@@ -314,10 +346,10 @@ void CellSoup::tile_color_chаnge(tile* cur) {
 		Graphics->change_tile_color(R, G, B, cur->row, cur->col);
 		break;
 	case WALL:
-		Graphics->change_tile_color(255, 255, 255, cur->row, cur->col);
+		Graphics->change_tile_color(255, 255, 255, 255, cur->row, cur->col);
 		break;
 	case BODY:
-		Graphics->change_tile_color(150, 150, 150, cur->row, cur->col);
+		Graphics->change_tile_color(150, 150, 150, 200, cur->row, cur->col);
 		break;
 	default:
 		break;
@@ -338,7 +370,7 @@ void CellSoup::make_life(int density)
 	srand(clock());
 	for (unsigned int i = cols; i < rows*cols - cols - 1; i++) {
 		int r = (rand() + clock()/2) % 100;
-		if (r <= density) make_cell(&tiles[i]);
+		if (r <= density) make_cell(&tiles[i], 0);
 	}
 	update_graphics();
 }
@@ -512,6 +544,22 @@ void CellSoup::cell_step(cell* cur) {
 			cur->energy -= 20;
 			break;
 
+		case 47:	//Абс. усл. переход "сосед голоден"
+			AP -= 1;
+			cur->energy -= 2;
+			if (cur->position->neighbors[cur->dest]->obj_type != CELL) break;
+			is_hungry(&cells[cur->position->neighbors[cur->dest]->cell], cur->DNA[cur->p_ctr + 1], cur->DNA[cur->p_ctr + 1], 0);
+			cur->p_ctr += 3;
+			break;
+
+		case 48:	//Отн. усл. переход "сосед голоден"
+			AP -= 1;
+			cur->energy -= 2;
+			if (cur->position->neighbors[cur->dest]->obj_type != CELL) break;
+			is_hungry(&cells[cur->position->neighbors[cur->dest]->cell], cur->DNA[cur->p_ctr + 1], cur->DNA[cur->p_ctr + 1], 1);
+			cur->p_ctr += 3;
+			break;
+
 		case 50: //Митоз
 			AP -= 15;
 			cur->energy -= 15;
@@ -525,6 +573,13 @@ void CellSoup::cell_step(cell* cur) {
 				cur->p_ctr = cur->p_ctr % 64;
 				break;
 			}
+		
+		case 55:	//Обмен энергией
+			AP -= 10;
+			cur->energy -= 15;
+			give_energy(cur, cur->DNA[cur->p_ctr + 1]);
+			cur->p_ctr += 2;
+			cur->p_ctr = cur->p_ctr % 64;
 
 		default:
 			AP--;
@@ -660,6 +715,17 @@ bool CellSoup::look_empty(cell * cur, int offs, int type)
 	return true;
 }
 
+bool CellSoup::give_energy(cell * cur, int oper)
+{
+	tile* gift_addr = cur->position->neighbors[cur->dest];
+	if (gift_addr->obj_type != CELL) return false;
+	int gift = oper / 64 * 100 * (float)cur->energy;
+	cells[gift_addr->cell].energy += gift;
+	cur->energy -= gift;
+
+	return true;
+}
+
 bool CellSoup::compare_feno(cell *cur, int address, int type)
 {
 	if (cur->position->neighbors[cur->dest]->obj_type == CELL) {
@@ -723,18 +789,36 @@ bool CellSoup::mitose(cell * cur, int mothercare)
 	int energy = (double)cur->energy * (double)(mothercare + 1.0) / 64.0;
 	if (energy <= 60) return false;
 
+	bool finding = true;
 	tile* baby_place = NULL;
-	for each (tile* place in cur->position->neighbors) {
-		if (place->obj_type == EMPTY) {
-			baby_place = place;
+
+	for (int i = 0; i < 6; i++) {
+		int j = (i + cur->dest) % 6;
+		if (cur->position->neighbors[j]->obj_type == EMPTY) {
+			baby_place = cur->position->neighbors[j];
+			finding = false;
 			break;
 		}
 	}
 
 	cur->energy -= energy;
 	if (baby_place == NULL) return false;
-
-	make_cell(baby_place, cur->DNA, cur->fenotype, energy);
+	int type;
+	if (cur->meat > cur->sun) {
+		if (cur->meat > cur->minerals) type = 1;
+		else {
+			if (cur->sun > cur->minerals) type = 0;
+			else type = 2;
+		}
+	}
+	else {
+		if (cur->sun > cur->minerals) type = 0;
+		else {
+			if (cur->meat > cur->minerals) type = 1;
+			else type = 2;
+		}
+	}
+	make_cell(baby_place, cur->dest, cur->DNA, cur->fenotype, energy, type);
 	if (cur->energy == 0) cell_die(cur);
 	return true;
 }

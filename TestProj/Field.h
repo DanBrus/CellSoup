@@ -3,14 +3,6 @@
 
 class Field
 {
-	typedef struct change_{
-		unsigned int row;
-		unsigned int col;
-		int R;
-		int G;
-		int B;
-	}change;
-
 	typedef struct tile_ {
 		int count;
 		sf::Color color;
@@ -18,8 +10,8 @@ class Field
 		std::vector<sf::Vector2f> verteces;
 
 
-		int change_color(unsigned int R, unsigned int G, unsigned int B) {
-			color = sf::Color(R, G, B);
+		int change_color(unsigned int R, unsigned int G, unsigned int B, unsigned int alpha = 255) {
+			color = sf::Color(R, G, B, alpha);
 			return 0;
 		}
 	}tile;
@@ -71,6 +63,7 @@ class Field
 		Tiles() {}
 		Tiles(int rows, int cols, std::vector<tile> *tiles_);
 		void fill_vertices();
+		int change_tile_color(unsigned int R, unsigned int G, unsigned int B, unsigned int alpha, unsigned int ctr);
 		int change_tile_color(unsigned int R, unsigned int G, unsigned int B, unsigned int ctr);
 		sf::Vector2f get_size();
 
@@ -116,7 +109,7 @@ public:
 	sf::Vector2f get_size();
 
 	int change_tile_color(unsigned int R, unsigned int G, unsigned int B, unsigned long long ctr);
-
+	int change_tile_color(unsigned int R, unsigned int G, unsigned int B, unsigned  int alpha, unsigned int row, unsigned int col);
 	int change_tile_color(unsigned int R, unsigned int G, unsigned int B, unsigned int row, unsigned int col);
 
 };

@@ -36,6 +36,11 @@ int Field::change_tile_color(unsigned int R, unsigned int G, unsigned int B, uns
 	return field.change_tile_color(R, G, B, ctr);
 }
 
+int Field::change_tile_color(unsigned int R, unsigned int G, unsigned int B, unsigned int alpha, unsigned int row, unsigned int col)
+{
+	unsigned int ctr = row * cols + col;
+	return field.change_tile_color(R, G, B, alpha, ctr);
+}
 int Field::change_tile_color(unsigned int R, unsigned int G, unsigned int B, unsigned int row, unsigned int col)
 {
 	unsigned int ctr = row * cols + col;
@@ -142,6 +147,17 @@ int Field::Tiles::change_tile_color(unsigned int R, unsigned int G, unsigned int
 	if ((R > 255) || (G > 255) || (B > 255)) return 2;
 
 	if (tiles[ctr].change_color(R, G, B)) return 3;
+
+	update_color(ctr);
+	return 0;
+}
+
+int Field::Tiles::change_tile_color(unsigned int R, unsigned int G, unsigned int B, unsigned int alpha, unsigned int ctr)
+{
+	if (ctr >= tiles.size()) return 1;
+	if ((R > 255) || (G > 255) || (B > 255)) return 2;
+
+	if (tiles[ctr].change_color(R, G, B, alpha)) return 3;
 
 	update_color(ctr);
 	return 0;

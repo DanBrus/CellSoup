@@ -67,6 +67,9 @@ void CellSimulator::graphic_thread(unsigned int rows, unsigned int cols, CellSou
 				}
 				break;
 
+			case sf::Event::KeyPressed:
+				Shell.key_pressed(event.key);
+
 			case sf::Event::MouseButtonReleased:
 				if (event.mouseButton.button == sf::Mouse::Left) {
 					Shell.l_release();

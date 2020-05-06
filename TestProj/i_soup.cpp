@@ -1,6 +1,7 @@
 #include "i_soup.h"
 #include "CellSoup.h"
 #include <Windows.h>
+#pragma warning(disable : 4996)
 
 
 i_soup::i_soup(CellSoup *Core, sf::Vector2i window_size, sf::Vector2f size, int rows, int cols)
@@ -12,6 +13,7 @@ i_soup::i_soup(CellSoup *Core, sf::Vector2i window_size, sf::Vector2f size, int 
 	this->window_size = window_size;
 	mouse_pos = sf::Vector2f(0, 0);
 	activeButton == NULL;
+	activeTextBox = NULL;
 
 	//Calculation support variabeld
 	float relation = window_size.x * 0.83f / window_size.y *0.85f;
@@ -57,6 +59,40 @@ i_soup::i_soup(CellSoup *Core, sf::Vector2i window_size, sf::Vector2f size, int 
 	buttons[4].set_text("Change mode");
 	buttons[4].set_action(&i_soup::change_mode);
 
+	//Making TextBoxes
+
+	for (int i = 0; i < 8; i++) {
+		text_boxes.push_back(TextBox(std::string("EMPTY"), 1.0f, &fonts[0], sf::Vector2f(90, 15), sf::Vector2f(5, 190 + i *(20)), 120.0f));
+	}
+	text_boxes[0].set_title(std::string("Sun level"));
+	text_boxes[0].set_control_val(&Core->sun);
+	text_boxes[0].set_val(12.0f);
+	text_boxes[1].set_title(std::string("Mineral level"));
+	text_boxes[1].set_control_val(&Core->minerals);
+	text_boxes[1].set_val(15.0f);
+	text_boxes[2].set_title(std::string("Radiation level"));
+	text_boxes[2].set_control_val(&Core->radiation);
+	text_boxes[2].set_val(50.0f);
+	text_boxes[3].set_title(std::string("Season duration"));
+	text_boxes[3].set_control_val((float*)&Core->season_during);
+	text_boxes[3].set_type(1);
+	text_boxes[3].set_val(300.0f);
+	text_boxes[4].set_title(std::string("Summer factor"));
+	text_boxes[4].set_control_val(&Core->seasons_differents[0]);
+	text_boxes[4].set_val(1.0f);
+	text_boxes[5].set_title(std::string("Autumn factor"));
+	text_boxes[5].set_control_val(&Core->seasons_differents[1]);
+	text_boxes[5].set_val(0.8f);
+	text_boxes[6].set_title(std::string("Winter factor"));
+	text_boxes[6].set_control_val(&Core->seasons_differents[2]);
+	text_boxes[6].set_val(0.6f);
+	text_boxes[7].set_title(std::string("Spring factor"));
+	text_boxes[7].set_control_val(&Core->seasons_differents[3]);
+	text_boxes[7].set_val(0.9f);
+	/*
+	TextBox test_box(std::string("Test box"), 1.23456789f, &fonts[0], sf::Vector2f(150, 15), sf::Vector2f(5, 5));
+	test_box.set_control_val((float *)&Core->sun);
+	*/
 }
 
 i_soup::~i_soup()
@@ -129,6 +165,7 @@ void i_soup::mouse_move(float x, float y)
 
 void i_soup::l_click()
 {
+	bool hited = false;
 	is_controls(mouse_pos);
 	if (is_field(mouse_pos)) {
 		mouse_hold = true;
@@ -137,7 +174,22 @@ void i_soup::l_click()
 		for (int i = 0; i < buttons.size(); i++) {
 			if (buttons[i].is_hit(global_to_local(mouse_pos, controls_view))) activeButton = &buttons[i];
 		}
+		for (int i = 0; i < text_boxes.size(); i++) {
+			if (text_boxes[i].is_hit(global_to_local(mouse_pos, controls_view))) {
+				if (activeTextBox != NULL) release_text_box();
+				activeTextBox = &text_boxes[i];
+				hited = true;
+			}
+		}
 	}
+	if (!hited) release_text_box();
+}
+
+void i_soup::release_text_box()
+{
+	if (activeTextBox == NULL) return;
+	activeTextBox->release();
+	activeTextBox = NULL;
 }
 
 void i_soup::l_release()
@@ -145,6 +197,11 @@ void i_soup::l_release()
 	mouse_hold = false;
 	if (activeButton != NULL) activeButton->release();
 	activeButton = NULL;
+}
+
+void i_soup::key_pressed(sf::Event::KeyEvent key)
+{
+	if (activeTextBox != 0) activeTextBox->input_char(key.code);
 }
 
 sf::Vector2f i_soup::global_to_local(sf::Vector2f vect, const sf::View local)
@@ -186,7 +243,6 @@ void i_soup::change_mode()
 	Core->change_style = true;
 }
 
-
 void i_soup::draw(sf::RenderTarget & target, sf::RenderStates states) const
 {
 
@@ -194,12 +250,6 @@ void i_soup::draw(sf::RenderTarget & target, sf::RenderStates states) const
 	info_rect.setFillColor(sf::Color(120, 120, 255, 90));
 	info_rect.setOutlineThickness(-5.f);
 	info_rect.setOutlineColor(sf::Color(30, 90, 255, 255));
-
-	sf::RectangleShape control_rect(sf::Vector2f(window_size.x * 0.14f, window_size.y * 0.85f));
-
-	control_rect.setFillColor(sf::Color(120, 120, 45, 90));
-	control_rect.setOutlineThickness(-5.f);
-	control_rect.setOutlineColor(sf::Color(30, 90, 255, 255));
 
 	sf::RectangleShape field_border(sf::Vector2f(window_size.x * 0.83f, window_size.y * 0.85f));
 	field_border.setFillColor(sf::Color(0, 0, 0, 0));
@@ -214,11 +264,12 @@ void i_soup::draw(sf::RenderTarget & target, sf::RenderStates states) const
 	target.draw(info_rect);
 
 	target.setView(controls_view);
-	//target.draw(control_rect);
 	
+	for (int i = 0; i < text_boxes.size(); i++)
+		target.draw(text_boxes[i]);
 	for(int i = 0; i < buttons.size(); i++)
 		target.draw(buttons[i]);
-
+		
 	target.setView(field_view);
 }
 
@@ -336,5 +387,153 @@ void i_soup::Button::set_size(sf::Vector2f size)
 void i_soup::Button::stabilize_text() {
 	text.setCharacterSize(border.getSize().y / 2);
 	text.setPosition(sf::Vector2f(border.getPosition().x + border.getSize().x / 2 - text.getLocalBounds().width / 2, border.getPosition().y + border.getSize().y / 2 - text.getGlobalBounds().height));
+}
+
+
+
+
+
+
+
+
+
+
+
+i_soup::TextBox::TextBox()
+{
+	type = 0;
+	value = 1.0f;
+	is_active = false;
+	title = sf::Text();
+	content = sf::Text();
+	border = sf::RectangleShape();
+	control_val = NULL;
+}
+
+i_soup::TextBox::TextBox(std::string title, float val, const sf::Font * font, sf::Vector2f global_size, sf::Vector2f pos, float offset)
+{
+	type = 0;
+	value = val;
+	is_active = false;
+
+	this->title = sf::Text(title, *font, global_size.y * 0.9f);
+	this->title.setColor(sf::Color::White);
+	this->title.setPosition(pos);
+
+	border = sf::RectangleShape(sf::Vector2f(global_size.x - this->title.getGlobalBounds().width - 5, global_size.y));
+	border.setPosition(sf::Vector2f(offset, pos.y));
+	border.setFillColor(sf::Color(120, 120, 120, 100));
+	border.setOutlineColor(sf::Color(255, 255, 255, 200));
+	border.setOutlineThickness(2.0f);
+
+	str = sf::String(std::to_string(val));
+	str.resize(4);
+	content = sf::Text(str, *font, border.getGlobalBounds().height * 0.6f);
+	content.setColor(sf::Color(255, 255, 250, 255));
+
+	
+	control_val = NULL;
+
+	stabilize_text();
+}
+
+void i_soup::TextBox::input_char(char c)
+{
+	if ((c == 59) && (!content.getString().isEmpty())) {
+		str.pop_back();
+		content.setString(str);
+		return;
+	}
+	if (str.size() >= 4) return;
+	if ((c >= 26) && (c < 36)) str.push_back((int)c + 22);
+	if (c == 50) str.push_back('.');
+	content.setString(str);
 
 }
+
+void i_soup::TextBox::set_control_val(float * val)
+{
+	control_val = val;
+	change_control_val();
+}
+
+bool i_soup::TextBox::is_hit(sf::Vector2f vect)
+{
+	sf::FloatRect bounds = border.getGlobalBounds();
+	if ((vect.x > bounds.left) && (vect.x < bounds.width + bounds.left) && (vect.y > bounds.top) && (vect.y < bounds.height + bounds.top)) {
+		click();
+		return true;
+	}
+	return false;
+}
+
+void i_soup::TextBox::set_type(int type)
+{
+	this->type = type;
+}
+
+void i_soup::TextBox::click()
+{
+	is_active = true;
+	border.setOutlineColor(sf::Color(200, 130, 120, 220));
+}
+
+void i_soup::TextBox::change_control_val() {
+	if (control_val == NULL) return;
+	if (content.getString().isEmpty()) {
+		str = sf::String(std::to_string(value));
+		str.resize(4);
+		content.setString(str);
+		return;
+	}
+	try {
+		value = std::stof(content.getString().toAnsiString());
+	}
+	catch (const std::invalid_argument) {
+		str = sf::String(std::to_string(value));
+		str.resize(4);
+		content.setString(str);
+		return;
+	}
+	if (type == 0) *control_val = value;
+	if (type == 1) *(int*)control_val = value;
+	
+	str = sf::String(std::to_string(value));
+	str.resize(4);
+	content.setString(str);
+}
+
+void i_soup::TextBox::stabilize_text() {
+	//content.setCharacterSize(border.getSize().y / 2);
+	content.setPosition(sf::Vector2f(border.getPosition().x + 3, border.getPosition().y + border.getSize().y / 2 - content.getGlobalBounds().height * 0.7));
+}
+
+void i_soup::TextBox::release()
+{
+	is_active = false;
+	this->border.setOutlineColor(sf::Color(255, 255, 255, 200));
+	change_control_val();
+}
+
+void i_soup::TextBox::set_title(std::string new_title)
+{
+	title.setString(new_title);
+}
+
+void i_soup::TextBox::set_val(float new_val)
+{
+	value = new_val;
+	str = sf::String(std::to_string(value));
+	str.resize(4);
+	content.setString(str);
+}
+
+void i_soup::TextBox::draw(sf::RenderTarget & target, sf::RenderStates states) const
+{
+	target.draw(border);
+	target.draw(title);
+	target.draw(content);
+	if (type == 0) *control_val = value;
+	if (type == 1) *(int*)control_val = value;
+}
+
