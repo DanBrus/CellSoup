@@ -106,6 +106,7 @@ CellSoup::CellSoup(unsigned int rows, unsigned int cols, Field *Graphics, int su
 	free_field = false;
 	b_make_life = false;
 	field_empty = true;
+	died = 0;
 
 	this->Graphics = Graphics;
 	this->rows = rows;
@@ -117,13 +118,13 @@ CellSoup::CellSoup(unsigned int rows, unsigned int cols, Field *Graphics, int su
 	this->graph_style = 0;
 	this->step_ctr = 0;
 	this->change_style = false;
-
 	season_ctr = 3;
 	seasons_differents[0] = 1.0;
 	seasons_differents[1] = 0.8;
 	seasons_differents[2] = 0.6;
 	seasons_differents[3] = 0.9;
 
+	for (int i = 0; i < rows*cols; i++) empty.push_back(i);
 	cells.resize(rows*cols);
 	tiles.resize(rows*cols);
 	make_tiles();
@@ -237,6 +238,55 @@ int CellSoup::get_radiation(unsigned int ctr)
 
 void CellSoup::make_cell(tile *position, int dir, int *DNA, int *feno, int energy, int type) {
 	cell *cur;
+	cur = &cells[empty.back()];
+	cur->ctr = empty.back();
+	empty.pop_back();
+
+	if (died == 0)
+		bizy.push_back(cur->ctr);
+	else {
+		bizy.push_back(bizy.back());
+		for (int i = 1; i < died; i++)
+			bizy[bizy.size() - i - 1] = bizy[bizy.size() - i - 2];
+		bizy[bizy.size() - died - 1] = cur->ctr;
+	}
+
+	cur->dest = dir;
+	cur->energy = energy;
+	if (type == 0) cur->sun++;
+	else
+		if (type == 1) cur->meat++;
+		else cur->minerals++;
+		cur->meat = 1;
+		cur->minerals = 1;
+		cur->sun = 1;
+		cur->craw = 0;
+		cur->err_ctr = 0;
+		cur->position = position;
+		cur->p_ctr = 0;
+
+		if (DNA == NULL) {			//Сюда заходим ТОЛЬКО при изначальном создании клеток
+			srand(clock() + rand());
+			for (int j = 0; j < 10; j++) cur->fenotype[j] = rand() % 64;	//Генерируем случайный фенотип
+			for (int j = 0; j < 64; j++) cur->DNA[j] = (rand() + clock()) % 64;		//Генерируем слуайный геном
+
+			obj_change(position, CELL, cur);
+		}
+		else {			//Заходим сюда ТОЛЬКО при митозе
+			srand(clock());
+			for (int j = 0; j < 10; j++) cur->fenotype[j] = feno[j];
+			for (int j = 0; j < 64; j++) cur->DNA[j] = DNA[j];
+
+			if (rand() % 100 < position->radiation_lvl) {
+				cur->DNA[rand() % 64] = rand() % 64;
+				srand(clock());
+				if (((rand() + clock()) % 100) < position->radiation_lvl) {
+					cur->fenotype[(rand() + clock()) % 10] = (rand() + clock()) % 64;
+				}
+			}
+			obj_change(position, CELL, cur);
+		}
+	/*
 	for (int i = 0; i < cells.size(); i++) {
 		if (cells[i].energy == 0) {		//Ищем пустышку
 			cur = &cells[i];
@@ -285,11 +335,33 @@ void CellSoup::make_cell(tile *position, int dir, int *DNA, int *feno, int energ
 			return;
 		}
 	}
-	
+	*/
 }
 
-void CellSoup::cell_die(cell *daddy) {
+void CellSoup::cell_die(cell *daddy, bool old_daddy) {
 	daddy->position->meat = daddy->energy / 2 + (daddy->meat + daddy->minerals + daddy->sun) * 12;
+	int i = 0;
+
+	for (int j = 0; j < bizy.size(); j++) {
+		i = j;
+		if (bizy[j] == daddy->ctr) break;
+	}
+
+	if (old_daddy) {
+		empty.push_back(daddy->ctr);
+		bizy[i] = bizy[bizy.size() - 1 - died];
+		died++;
+	}
+	else {
+		bizy[i] = bizy[bizy.size() - 1 - died];
+		
+		for (int j = died; j > 0; j--) {
+			bizy[bizy.size() - j - 1] = bizy[bizy.size() - j];
+		}
+		bizy.pop_back();
+		empty.push_back(daddy->ctr);
+	}
+
 	daddy->energy = 0;
 	obj_change(daddy->position, BODY, 0);
 	//daddy->position = NULL;
@@ -591,17 +663,22 @@ void CellSoup::cell_step(cell* cur) {
 	}
 	try_mutate(cur);
 	dig(cur);
-	if (cur->energy <= 0) cell_die(cur);
-	cur->energy %= 250;
+	if (cur->energy <= 0) cell_die(cur, false);
+	if (cur->energy > 250)
+		cur->energy = 250;
 	//if (graph_style == 1) tile_color_chаnge(cur->position);
 }
  
 void CellSoup::step() {
-	for (int i = 0; i < cells.size(); i++)
+	for (int i = 0; i < bizy.size(); i++)
 	{
-		if (cells[i].energy == 0) continue;
-		cell_step(&cells[i]);
-		cells[i].err_ctr = 0;
+		if (cells[bizy[i]].energy == 0)
+			printf("Died cell in \"bizy\"\n");
+		cells[bizy[i]].err_ctr = 0;
+		cell_step(&cells[bizy[i]]);
+	}
+	for (died; died > 0; died--){
+		bizy.pop_back();
 	}
 }
 
@@ -631,9 +708,32 @@ bool CellSoup::heat(cell * cur, int dir)
 {
 	turn(cur, dir);
 	tile* attack_tile = cur->position->neighbors[cur->dest];
+	bool old_daddy;
 	switch (attack_tile->obj_type) {
 	case CELL:
-		cell_die(&cells[attack_tile->cell]);
+		for (int i = 0; i < bizy.size(); i++) {
+			if (bizy[i] == cur->ctr) {
+				old_daddy = false;
+				break;
+			}
+
+			if (bizy[i] == cells[attack_tile->cell].ctr) {
+				old_daddy = true;
+				break;
+			}
+		}
+
+		for (int i = 0; i < died; i++) {
+			if (bizy[bizy.size() - 1 - i] == cells[attack_tile->cell].ctr) {
+				for (int j = i; j > 0; j--) 
+					bizy[bizy.size() - 1 - j] = bizy[bizy.size() - j];
+				bizy.pop_back();
+				died--;
+			}
+		}
+
+		cell_die(&cells[attack_tile->cell], old_daddy);
+
 		cur->energy += attack_tile->meat + 40;
 		attack_tile->obj_type = EMPTY;
 		//move(cur, 0);
@@ -787,7 +887,7 @@ bool CellSoup::assim(cell * cur)
 bool CellSoup::mitose(cell * cur, int mothercare)
 {
 	int energy = (double)cur->energy * (double)(mothercare + 1.0) / 64.0;
-	if (energy <= 60) return false;
+	if (energy <= 30) return false;
 
 	bool finding = true;
 	tile* baby_place = NULL;
@@ -819,7 +919,7 @@ bool CellSoup::mitose(cell * cur, int mothercare)
 		}
 	}
 	make_cell(baby_place, cur->dest, cur->DNA, cur->fenotype, energy, type);
-	if (cur->energy == 0) cell_die(cur);
+	
 	return true;
 }
 
@@ -856,12 +956,15 @@ void CellSoup::generator() {
 				Cl_17();
 				free_field = false;
 				field_empty = true;
+				this->step_ctr = 0;
 			}
 			if (b_make_life && field_empty) {
 				make_life();
 				b_make_life = false;
 				field_empty = false;
 			}
+			if (b_make_life && !field_empty)
+				b_make_life = false;
 		}
 	}
 }
@@ -872,6 +975,11 @@ void CellSoup::Cl_17() {
 
 	tiles.clear();
 	tiles.resize(rows * cols);
+
+	bizy.clear();
+	empty.clear();
+	for (int i = 0; i < rows*cols; i++) empty.push_back(i);
+
 	make_tiles();
 	find_neighbors();
 	update_graphics();

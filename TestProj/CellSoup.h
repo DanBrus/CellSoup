@@ -45,6 +45,9 @@ public:
 private:
 	bool is_run, change_style, free_field, b_make_life, field_empty;
 	std::vector<cell> cells;
+	std::vector<int> empty;
+	std::vector<int> bizy;
+	int died;
 	unsigned int rows, cols;
 	int season_during, season_ctr, graph_style;
 	float sun, radiation, minerals;
@@ -74,7 +77,7 @@ private:
 	void update_graphics();
 
 	void make_cell(tile *position, int dir, int *DNA = NULL, int *feno = NULL, int energy = 300, int type = 0);
-	void cell_die(cell *daddy);
+	void cell_die(cell *daddy, bool old_daddy = true);
 
 	void cell_step(cell* cur);
 	void updater();
