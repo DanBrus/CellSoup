@@ -22,11 +22,8 @@ class Field
 		Borders() {	}
 
 		Borders(float *offers, float a, int rows, int cols);
-
 		void calculate_tailmap(int rows, int cols, sf::Vector2f start, float a);
-
 		void Hexagon(float coreX, float coreY, float r, sf::Vertex *vertices);
-
 		std::vector<tile> *get_tiles() {
 			return &tiles;
 		}
@@ -66,6 +63,7 @@ class Field
 		int change_tile_color(unsigned int R, unsigned int G, unsigned int B, unsigned int alpha, unsigned int ctr);
 		int change_tile_color(unsigned int R, unsigned int G, unsigned int B, unsigned int ctr);
 		sf::Vector2f get_size();
+		int is_hit(sf::Vector2f pos, int rows, int cols);
 
 	private:
 		void update_color();
@@ -111,6 +109,7 @@ public:
 	int change_tile_color(unsigned int R, unsigned int G, unsigned int B, unsigned long long ctr);
 	int change_tile_color(unsigned int R, unsigned int G, unsigned int B, unsigned  int alpha, unsigned int row, unsigned int col);
 	int change_tile_color(unsigned int R, unsigned int G, unsigned int B, unsigned int row, unsigned int col);
+	int is_hit(sf::Vector2f pos);
 
 };
 

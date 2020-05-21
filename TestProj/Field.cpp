@@ -47,6 +47,11 @@ int Field::change_tile_color(unsigned int R, unsigned int G, unsigned int B, uns
 	return field.change_tile_color(R, G, B, ctr);
 }
 
+int Field::is_hit(sf::Vector2f pos)
+{
+	return field.is_hit(pos, rows, cols);
+}
+
 sf::Vector2f Field::get_size() {
 	return field.get_size();
 }
@@ -107,8 +112,9 @@ Field::Tiles::Tiles(int rows, int cols, std::vector<tile>* tiles_)
 	tile cur;
 	m_vertices.setPrimitiveType(sf::Triangles);
 
-	for (int i = tiles_[0].size() - 1; i >= 0; i--) {
+	for (int i = tiles_->size() - 1; i >= 0; i--) {
 		cur = tiles_[0][i];
+		cur.count = tiles_->size() - i - 1;
 		tiles.push_back(cur);
 	}
 
@@ -188,3 +194,106 @@ sf::Vector2f Field::Tiles::get_size() {
 	size.y++;
 	return size;
 }
+
+int Field::Tiles::is_hit(sf::Vector2f pos, int rows, int cols)
+{
+	//Приближенно определить строку
+
+	int row = 0;
+	while (tiles[row * cols].verteces[3].y > pos.y) {
+		row++;
+		if (row == rows) {
+			row--;
+			break;
+		}
+	}
+	
+	//Приблизительно определить столбец
+
+	int col = 0;
+	while (tiles[row * cols + col].verteces[5].x > pos.x) {
+		col++;
+		if (col == cols) {
+			col--;
+			break;
+		}
+	}
+	tile* cur = &tiles[row * cols + col];
+
+	bool right = false, top = false;
+	if (cur->centre.x < pos.x) 
+		right = true;
+	if (cur->centre.y > pos.y)
+		top = true;
+
+	tile *neightbor = NULL;
+	if (top) {
+		if (right) {
+			if ((row != rows - 1) && !(col == 0 && row % 2 == 0)) {
+				if (row % 2 == 0)
+					neightbor = &tiles[(row + 1)*cols + col];
+				else
+					neightbor = &tiles[(row + 1)*cols + col - 1];
+			}
+		}
+		else {
+			if ((row != rows - 1) && !(col == cols - 1 && row % 2 == 1)) {
+				if (row % 2 == 0)
+					neightbor = &tiles[(row + 1)*cols + col + 1];
+				else
+					neightbor = &tiles[(row + 1)*cols + col];
+			}
+		}
+	}
+	if (neightbor == NULL) {
+		if (pow(cur->centre.x - pos.x, 2) + pow(cur->centre.y - pos.y, 2) < pow(cur->centre.y - cur->verteces[3].y, 2))
+			return cur->count;
+		else
+			return -1;
+	}
+
+	if (pow(cur->centre.x - pos.x, 2) + pow(cur->centre.y - pos.y, 2) <= pow(neightbor->centre.x - pos.x, 2) + pow(neightbor->centre.y - pos.y, 2))
+		return cur->count;
+	else
+		return neightbor->count;
+
+	/*
+	if (cur->verteces[2].y > pos.y) {	//Выше основного прямоугольника?
+		if (cur->centre.x < pos.x) {	//Правее центра?
+			if((cur->verteces[1].y - cur->verteces[0].y) / (cur->verteces[1].x - cur->verteces[0].x) * (pos.x - cur->verteces[0].x) > pos.y) //Попал ли в треугольник?
+				return row * cols + col;
+			else {
+				if (row == rows - 1)
+					return -1;
+				if (col == cols - 1 && row % 2 == 1)
+					return -1;
+				col += row % 2;
+				row += 1;
+			}
+		}
+		else {
+			if ((cur->verteces[0].y - cur->verteces[5].y) / (cur->verteces[0].x - cur->verteces[5].x) * (pos.x - cur->verteces[5].x) > pos.y) //Попал ли в треугольник?
+				return row * cols + col;
+			else {
+				if (row == rows - 1)
+					return -1;
+				if (col == 0 && row % 2 == 0)
+					return -1;
+				row += 1;
+				col -= row % 2;
+			}
+		}
+	}
+	else {
+		//Нижний ряд?
+		if (row == 0) {
+			if (cur->centre.x < pos.x) {	//Правее центра?
+				
+			}
+		}
+	}
+	
+	return row * cols + col; //Попал
+	*/
+}
+

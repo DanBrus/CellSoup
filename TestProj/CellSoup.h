@@ -43,7 +43,7 @@ class CellSoup
 public:
 	std::vector<tile> tiles;
 private:
-	bool is_run, change_style, free_field, b_make_life, field_empty;
+	bool is_run, change_style, free_field, b_make_life, field_empty, one_step;
 	std::vector<cell> cells;
 	std::vector<int> empty;
 	std::vector<int> bizy;

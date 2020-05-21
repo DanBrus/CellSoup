@@ -76,41 +76,54 @@ class i_soup : public sf::Drawable
 	};
 	
 	CellSoup *Core;
+	Field *Graphics;
 
 private:
 	sf::View main_view, field_view, controls_view, info_view;
 	sf::Vector2f mouse_pos, field_view_size;
 	sf::Vector2i window_size;
 	float cur_zoom, max_zoom;
-	bool mouse_hold;
+	bool mouse_hold,is_mouse_still;
+	int active_tile;
 	std::vector<Button> buttons;
 	Button *activeButton;
 	std::vector<sf::Font> fonts;
 	std::vector<TextBox> text_boxes;
 	TextBox *activeTextBox;
 
+	std::vector<sf::Text> cell_info_title;
+	std::vector<sf::Text> cell_info;	//0 - ID; 1 - energy; 2 - direction; 3 - meat; 4 -sun; 5 - minerals; 6 - craw
+	std::vector<sf::Text> dna_info;
+	std::vector<sf::Text> global_info;
+
 public:
-	i_soup(CellSoup *Core, sf::Vector2i window_size, sf::Vector2f size, int rows, int cols);
+	i_soup(CellSoup *Core, Field *Graphics, sf::Vector2i window_size, sf::Vector2f size, int rows, int cols);
 	~i_soup();
 
-	bool is_field(sf::Vector2f pos);
-	bool is_controls(sf::Vector2f pos);
-	bool is_info(sf::Vector2f pos);
-	void move_field(sf::Vector2f offset);
-	void zoom_field(float zoom);
-	void mouse_move(float x, float y);
-	void l_click();
-	void l_release();
-	void key_pressed(sf::Event::KeyEvent key);
-	sf::Vector2f global_to_local(sf::Vector2f vect, const sf::View local);
+	bool is_field(sf::Vector2f pos);		//Check for field click
+	bool is_controls(sf::Vector2f pos);		//Check for controls click
+	bool is_info(sf::Vector2f pos);			//Check for info click
+	void move_field(sf::Vector2f offset);	//Moving of field
+	void zoom_field(float zoom);			//Zooming of field
+	void mouse_move(float x, float y);		//Change mouse position
+	void l_click();							//Tap to left mouse button
+	void l_release();						//Release left mouse button
+	void key_pressed(sf::Event::KeyEvent key);	//Tap keyboard button
+	void set_step_info();
+
+	sf::Vector2f global_to_local(sf::Vector2f vect, const sf::View local);	//Transform global coordinates to view local coordinates
 
 private:
+	void info_init();
+	void controls_init();
 	void release_text_box();
 	void start_simulation();
 	void stop_simulation();
 	void make_life();
 	void clean_field();
 	void change_mode();
+	void one_step();
+	void print_active_tile();
 
 	virtual void draw(sf::RenderTarget& target, sf::RenderStates states) const;
 };

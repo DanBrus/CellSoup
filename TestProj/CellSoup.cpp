@@ -106,6 +106,7 @@ CellSoup::CellSoup(unsigned int rows, unsigned int cols, Field *Graphics, int su
 	free_field = false;
 	b_make_life = false;
 	field_empty = true;
+	one_step = false;
 	died = 0;
 
 	this->Graphics = Graphics;
@@ -734,7 +735,7 @@ bool CellSoup::heat(cell * cur, int dir)
 
 		cell_die(&cells[attack_tile->cell], old_daddy);
 
-		cur->energy += attack_tile->meat + 40;
+		cur->energy += attack_tile->meat;
 		attack_tile->obj_type = EMPTY;
 		//move(cur, 0);
 
@@ -746,7 +747,7 @@ bool CellSoup::heat(cell * cur, int dir)
 		attack_tile->obj_type = EMPTY;											//!!!!!!!!!!!!!!!
 		//move(cur, 0);
 		cur->meat++;
-		cur->energy += 60 + attack_tile->meat * 1.5;
+		cur->energy += attack_tile->meat * 1.5;
 		return true;
 		break;
 
@@ -877,7 +878,7 @@ bool CellSoup::dig(cell* cur) {
 bool CellSoup::assim(cell * cur)
 {
 	cur->minerals++;
-	cur->energy += cur->craw * 15;										//!!!!!!!!!!!!!!!!!
+	cur->energy += cur->craw * 8;										//!!!!!!!!!!!!!!!!!
 	cur->craw = 0;
 
 	//tile_color_chànge(cur->position);
@@ -944,14 +945,35 @@ void CellSoup::generator() {
 
 		if (is_run) {
 			if (!field_empty) {
-				step_ctr++;
-				if (step_ctr % season_during == 0) change_season();
-				step();
-				update_graphics();
+				if (!one_step) {
+					step_ctr++;
+					if (step_ctr % season_during == 0) change_season();
+					step();
+					update_graphics();
+				}
+				else {
+					step_ctr++;
+					if (step_ctr % season_during == 0) change_season();
+					step();
+					update_graphics();
+					one_step = false;
+					is_run = false;
+				}
 			}
 			else is_run = false;
 		}
 		else {
+			if (!field_empty) {
+				if (one_step) {
+					step_ctr++;
+					if (step_ctr % season_during == 0) change_season();
+					step();
+					update_graphics();
+					one_step = false;
+				}
+			}
+			else
+				one_step = false;
 			if (free_field) {
 				Cl_17();
 				free_field = false;

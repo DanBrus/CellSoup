@@ -35,11 +35,10 @@ void CellSimulator::graphic_thread(unsigned int rows, unsigned int cols, CellSou
 
 	sf::Vector2f size = Graphics.get_size();
 
-	i_soup Shell(Core, window_size, size, rows, cols);
+	i_soup Shell(Core, &Graphics, window_size, size, rows, cols);
 	float zoom;
 	while (window.isOpen())
 	{
-		int i;
 		// check all the window's events that were triggered since the last iteration of the loop
 
 		sf::Vector2f offset;
@@ -83,6 +82,7 @@ void CellSimulator::graphic_thread(unsigned int rows, unsigned int cols, CellSou
 		window.clear(sf::Color::Black);
 		//Define view
 		// draw everything here...
+		Shell.set_step_info();
 		window.draw(Shell);
 		window.draw(*Graphics.get_tiles());
 		window.draw(*Graphics.get_borders());

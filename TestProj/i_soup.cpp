@@ -1,18 +1,23 @@
 #include "i_soup.h"
 #include "CellSoup.h"
 #include <Windows.h>
+#include <iostream>
 #pragma warning(disable : 4996)
 
 
-i_soup::i_soup(CellSoup *Core, sf::Vector2i window_size, sf::Vector2f size, int rows, int cols)
+i_soup::i_soup(CellSoup *Core, Field *Graphics, sf::Vector2i window_size, sf::Vector2f size, int rows, int cols)
 {
 	//Filling variables
 	this->Core = Core;
+	this->Graphics = Graphics;
+
 	mouse_hold = false;
+	is_mouse_still = false;
 	cur_zoom = 1;
+	active_tile = -1;
 	this->window_size = window_size;
 	mouse_pos = sf::Vector2f(0, 0);
-	activeButton == NULL;
+	activeButton = NULL;
 	activeTextBox = NULL;
 
 	//Calculation support variabeld
@@ -40,11 +45,148 @@ i_soup::i_soup(CellSoup *Core, sf::Vector2i window_size, sf::Vector2f size, int 
 	controls_view.setViewport(sf::FloatRect(0.85f, 0.02f, 0.14f, 0.85f));
 	info_view.setViewport((sf::FloatRect(0.01f, 0.88f, 0.98f, 0.11f)));
 	
+	controls_init();
+
+	info_init();
+}
+
+i_soup::~i_soup()
+{
+}
+
+void i_soup::info_init()
+{
+	sf::Text cur = sf::Text(std::string("EMPTY"), fonts[0], 14);
+	cur.setPosition(sf::Vector2f(3.0f, 3.0f));
+	cur.setString(std::string("Cell ID:"));
+	cell_info_title.push_back(cur);
+
+	cur.setPosition(sf::Vector2f(110.0f, 3.0f));
+	cur.setString(std::string("Energy:"));
+	cell_info_title.push_back(cur);
+
+	cur.setPosition(sf::Vector2f(200.0f, 3.0f));
+	cur.setString(std::string("Direction:"));
+	cell_info_title.push_back(cur);
+
+	cur.setPosition(sf::Vector2f(320.0f, 3.0f));
+	cur.setString(std::string("Meat:"));
+	cell_info_title.push_back(cur);
+
+	cur.setPosition(sf::Vector2f(390.0f, 3.0f));
+	cur.setString(std::string("Sun:"));
+	cell_info_title.push_back(cur);
+
+	cur.setPosition(sf::Vector2f(450.0f, 3.0f));
+	cur.setString(std::string("Mineral:"));
+	cell_info_title.push_back(cur);
+
+	cur.setPosition(sf::Vector2f(550.0f, 3.0f));
+	cur.setString(std::string("Craw:"));
+	cell_info_title.push_back(cur);
+
+	cur.setCharacterSize(14);
+	cur.setPosition(sf::Vector2f(3.0f, 22.0f));
+	cur.setString(std::string("DNA:"));
+	cell_info_title.push_back(cur);
+
+	cur.setCharacterSize(14);
+	cur.setPosition(sf::Vector2f(120.0f, 22.0f));
+	cur.setString(std::string("Active gen:"));
+	cell_info_title.push_back(cur);
+
+	cur.setCharacterSize(10);
+	cur.setColor(sf::Color::Magenta);
+	cur.setPosition(sf::Vector2f(8.0f, 37.0f));
+	cur.setString(std::string("0   1   2   3   4   5   6   7   8   9   10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63"));
+	cell_info_title.push_back(cur);
+
+
+	cur.setColor(sf::Color::White);
+	cur.setCharacterSize(12);
+	cur.setPosition(sf::Vector2f(60.0f, 5.0f));
+	cur.setString(std::string("00000"));
+	cell_info.push_back(cur);
+
+	cur.setPosition(sf::Vector2f(160.0f, 5.0f));
+	cur.setString(std::string("00"));
+	cell_info.push_back(cur);
+
+	cur.setPosition(sf::Vector2f(280.0f, 5.0f));
+	cur.setString(std::string("--"));
+	cell_info.push_back(cur);
+
+	cur.setPosition(sf::Vector2f(360.0f, 5.0f));
+	cur.setString(std::string("00"));
+	cell_info.push_back(cur);
+
+	cur.setPosition(sf::Vector2f(420.0f, 5.0f));
+	cur.setString(std::string("00"));
+	cell_info.push_back(cur);
+
+	cur.setPosition(sf::Vector2f(505.0f, 5.0f));
+	cur.setString(std::string("00"));
+	cell_info.push_back(cur);
+
+	cur.setPosition(sf::Vector2f(590.0f, 5.0f));
+	cur.setString(std::string("00"));
+	cell_info.push_back(cur);
+
+	cur.setPosition(sf::Vector2f(195.0f, 25.0f));
+	cur.setString(std::string("--"));
+	cell_info.push_back(cur);
+
+	cur.setCharacterSize(10);
+	for (int i = 0; i < 10; i++) {
+		cur.setString(std::string("00"));
+		cur.setPosition(sf::Vector2f(4.0f + 16.5f * i, 48));
+		dna_info.push_back(cur);
+	}
+
+	for (int i = 10; i < 64; i++) {
+		cur.setString(std::string("00"));
+		cur.setPosition(sf::Vector2f(168.0f + 17 * (i - 10), 48));
+		dna_info.push_back(cur);
+	}
+
+	cur.setCharacterSize(14);
+	cur.setPosition(sf::Vector2f(670.0f, 3.0f));
+	cur.setString(std::string("Step No:"));
+	global_info.push_back(cur);
+
+	cur.setCharacterSize(12);
+	cur.setPosition(sf::Vector2f(730.0f, 5.0f));
+	cur.setString(std::string("00000000"));
+	global_info.push_back(cur);
+
+	cur.setCharacterSize(14);
+	cur.setPosition(sf::Vector2f(820.0f, 3.0f));
+	cur.setString(std::string("Cells:"));
+	global_info.push_back(cur);
+
+	cur.setCharacterSize(12);
+	cur.setPosition(sf::Vector2f(860.0f, 5.0f));
+	cur.setString(std::string("00000"));
+	global_info.push_back(cur);
+
+	cur.setCharacterSize(14);
+	cur.setPosition(sf::Vector2f(925.0f, 3.0f));
+	cur.setString(std::string("Season No:"));
+	global_info.push_back(cur);
+
+	cur.setCharacterSize(12);
+	cur.setPosition(sf::Vector2f(1000.0f, 5.0f));
+	cur.setString(std::string("0"));
+	global_info.push_back(cur);
+}
+
+void i_soup::controls_init()
+{
 	//Making buttons
 	buttons.resize(6);
 	fonts.push_back(sf::Font());
 	fonts[0].loadFromFile("PetscopWide.ttf");
-	for (int i = 0; i < 5; i++) {
+	for (int i = 0; i < 6; i++) {
 		Button tmp(sf::Vector2f(30, 10 + i * (35)), sf::Vector2f(90.0f, 30.0f), "TEST", NULL, &fonts[0], this);
 		buttons[i] = tmp;
 	}
@@ -52,17 +194,19 @@ i_soup::i_soup(CellSoup *Core, sf::Vector2i window_size, sf::Vector2f size, int 
 	buttons[0].set_action(&i_soup::start_simulation);
 	buttons[1].set_text("Stop");
 	buttons[1].set_action(&i_soup::stop_simulation);
-	buttons[2].set_text("Make life");
-	buttons[2].set_action(&i_soup::make_life);
-	buttons[3].set_text("Clean field");
-	buttons[3].set_action(&i_soup::clean_field);
-	buttons[4].set_text("Change mode");
-	buttons[4].set_action(&i_soup::change_mode);
+	buttons[2].set_text("One step");
+	buttons[2].set_action(&i_soup::one_step);
+	buttons[3].set_text("Make life");
+	buttons[3].set_action(&i_soup::make_life);
+	buttons[4].set_text("Clean field");
+	buttons[4].set_action(&i_soup::clean_field);
+	buttons[5].set_text("Change mode");
+	buttons[5].set_action(&i_soup::change_mode);
 
 	//Making TextBoxes
 
 	for (int i = 0; i < 8; i++) {
-		text_boxes.push_back(TextBox(std::string("EMPTY"), 1.0f, &fonts[0], sf::Vector2f(90, 15), sf::Vector2f(5, 190 + i *(20)), 120.0f));
+		text_boxes.push_back(TextBox(std::string("EMPTY"), 1.0f, &fonts[0], sf::Vector2f(90, 15), sf::Vector2f(5, 220 + i *(20)), 120.0f));
 	}
 	text_boxes[0].set_title(std::string("Sun level"));
 	text_boxes[0].set_control_val(&Core->sun);
@@ -89,14 +233,7 @@ i_soup::i_soup(CellSoup *Core, sf::Vector2i window_size, sf::Vector2f size, int 
 	text_boxes[7].set_title(std::string("Spring factor"));
 	text_boxes[7].set_control_val(&Core->seasons_differents[3]);
 	text_boxes[7].set_val(0.9f);
-	/*
-	TextBox test_box(std::string("Test box"), 1.23456789f, &fonts[0], sf::Vector2f(150, 15), sf::Vector2f(5, 5));
-	test_box.set_control_val((float *)&Core->sun);
-	*/
-}
 
-i_soup::~i_soup()
-{
 }
 
 bool i_soup::is_field(sf::Vector2f pos)
@@ -154,6 +291,7 @@ void i_soup::zoom_field(float zoom)
 
 void i_soup::mouse_move(float x, float y)
 {
+	is_mouse_still = false;
 	if (mouse_hold) {
 		sf::Vector2f offset((mouse_pos.x - x) * field_view.getSize().x / ((float)window_size.x * 0.83f), (mouse_pos.y - y) * field_view.getSize().y / ((float)window_size.y * 0.85f));
 		move_field(offset);
@@ -169,6 +307,7 @@ void i_soup::l_click()
 	is_controls(mouse_pos);
 	if (is_field(mouse_pos)) {
 		mouse_hold = true;
+		is_mouse_still = true;
 	}
 	if (is_controls(mouse_pos)) {
 		for (int i = 0; i < buttons.size(); i++) {
@@ -195,6 +334,17 @@ void i_soup::release_text_box()
 void i_soup::l_release()
 {
 	mouse_hold = false;
+
+	if (is_mouse_still) {
+		is_mouse_still = false;
+		if (is_field(mouse_pos) && !Core->is_run) {
+			active_tile = Graphics->is_hit(global_to_local(mouse_pos, field_view));
+			//printf("%d\n", &active_cell);
+			std::cout << active_tile << std::endl;
+			print_active_tile();
+		}
+	}
+
 	if (activeButton != NULL) activeButton->release();
 	activeButton = NULL;
 }
@@ -202,6 +352,13 @@ void i_soup::l_release()
 void i_soup::key_pressed(sf::Event::KeyEvent key)
 {
 	if (activeTextBox != 0) activeTextBox->input_char(key.code);
+}
+
+void i_soup::set_step_info()
+{
+	global_info[1].setString(std::to_string(Core->step_ctr));
+	global_info[3].setString(std::to_string(Core->bizy.size()));
+	global_info[5].setString(std::to_string(Core->season_ctr));
 }
 
 sf::Vector2f i_soup::global_to_local(sf::Vector2f vect, const sf::View local)
@@ -214,6 +371,8 @@ sf::Vector2f i_soup::global_to_local(sf::Vector2f vect, const sf::View local)
 
 void i_soup::start_simulation()
 {
+	active_tile = -1;
+	print_active_tile();
 	Core->is_run = true;
 }
 
@@ -236,6 +395,54 @@ void i_soup::clean_field()
 	Core->is_run = false;
 	Sleep(50);
 	Core->free_field = true;
+}
+
+void i_soup::one_step()
+{
+	Core->one_step = true;
+}
+
+void i_soup::print_active_tile()
+{
+	cell *cur;
+
+	for (int i = 0; i < 8; i++)
+		cell_info[i].setString(std::string("-"));
+	for (int i = 0; i < 64; i++)
+		dna_info[i].setString(std::string("00"));
+
+	if (active_tile == -1)
+		return;
+
+	switch (Core->tiles[active_tile].obj_type) {
+	case 0:		//EMPTY
+		break;
+
+	case 1:		//CELL
+		cur = &Core->cells[Core->tiles[active_tile].cell];
+		cell_info[0].setString(std::to_string(cur->ctr));
+		cell_info[1].setString(std::to_string(cur->energy));
+		cell_info[2].setString(std::to_string(cur->dest));
+		cell_info[3].setString(std::to_string(cur->meat));
+		cell_info[4].setString(std::to_string(cur->sun));
+		cell_info[5].setString(std::to_string(cur->minerals));
+		cell_info[6].setString(std::to_string(cur->craw));
+		cell_info[7].setString(std::to_string(cur->p_ctr));
+
+		for (int i = 0; i < 64; i++)
+			dna_info[i].setString(std::to_string(cur->DNA[i]));
+		break;
+
+	case 2:		//BODY
+		cell_info[3].setString(std::to_string(Core->tiles[active_tile].meat));
+		break;
+
+	case 3:		//WALL
+
+		break;
+	}
+
+	return;
 }
 
 void i_soup::change_mode()
@@ -261,7 +468,15 @@ void i_soup::draw(sf::RenderTarget & target, sf::RenderStates states) const
 	target.draw(field_border);
 
 	target.setView(info_view);
-	target.draw(info_rect);
+	//target.draw(info_rect);
+	for (int i = 0; i < cell_info_title.size(); i++)
+		target.draw(cell_info_title[i]);
+	for (int i = 0; i < cell_info.size(); i++)
+		target.draw(cell_info[i]);
+	for (int i = 0; i < 64; i++)
+		target.draw(dna_info[i]);
+	for (int i = 0; i < global_info.size(); i++)
+		target.draw(global_info[i]);
 
 	target.setView(controls_view);
 	
@@ -272,10 +487,6 @@ void i_soup::draw(sf::RenderTarget & target, sf::RenderStates states) const
 		
 	target.setView(field_view);
 }
-
-
-
-
 
 
 
@@ -388,8 +599,6 @@ void i_soup::Button::stabilize_text() {
 	text.setCharacterSize(border.getSize().y / 2);
 	text.setPosition(sf::Vector2f(border.getPosition().x + border.getSize().x / 2 - text.getLocalBounds().width / 2, border.getPosition().y + border.getSize().y / 2 - text.getGlobalBounds().height));
 }
-
-
 
 
 
@@ -536,4 +745,3 @@ void i_soup::TextBox::draw(sf::RenderTarget & target, sf::RenderStates states) c
 	if (type == 0) *control_val = value;
 	if (type == 1) *(int*)control_val = value;
 }
-
