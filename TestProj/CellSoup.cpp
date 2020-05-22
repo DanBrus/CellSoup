@@ -2,6 +2,7 @@
 #include "Field.h"
 #include "math.h"
 #include <windows.h>
+#include <iostream>
 
 #define EMPTY 0
 #define CELL 1
@@ -278,7 +279,7 @@ void CellSoup::make_cell(tile *position, int dir, int *DNA, int *feno, int energ
 			for (int j = 0; j < 10; j++) cur->fenotype[j] = feno[j];
 			for (int j = 0; j < 64; j++) cur->DNA[j] = DNA[j];
 
-			if (rand() % 100 < position->radiation_lvl) {
+			if ((rand() + clock()) % 100 < position->radiation_lvl) {
 				cur->DNA[rand() % 64] = rand() % 64;
 				srand(clock());
 				if (((rand() + clock()) % 100) < position->radiation_lvl) {
@@ -456,7 +457,7 @@ void CellSoup::updater() {
 }
 
 void CellSoup::cell_step(cell* cur) {
-	int AP = 1;
+	int AP = 15;
 	while (AP > 0) {
 		switch (cur->DNA[cur->p_ctr]) {
 		case 1:
@@ -502,40 +503,40 @@ void CellSoup::cell_step(cell* cur) {
 		case 10:	//Абс. условный переход "голод"
 			AP--;
 			cur->energy -= 2;
-			is_hungry(cur, cur->DNA[cur->p_ctr + 1], cur->DNA[cur->p_ctr + 1], 0);
+			is_hungry(cur, cur->DNA[(cur->p_ctr + 1) % 64], cur->DNA[(cur->p_ctr + 2) % 64], 0);
 
 		case 12:	//абс. условный переход "пусто"
 			AP--;
-			look_empty(cur, cur->DNA[cur->p_ctr + 1], 0);
+			look_empty(cur, cur->DNA[(cur->p_ctr + 1) % 64], 0);
 			cur->energy -= 2;
 			break;
 
 		case 13:	//отн. условный переход "пусто"
 			AP--;
-			look_empty(cur, cur->DNA[cur->p_ctr + 1], 1);
+			look_empty(cur, cur->DNA[(cur->p_ctr + 1) % 64], 1);
 			cur->energy -= 2;
 			break;
 
 		case 15:	//отн. условный переход "голод"
 			AP--;
 			cur->energy -= 2;
-			is_hungry(cur, cur->DNA[cur->p_ctr + 1], cur->DNA[cur->p_ctr + 1], 1);
+			is_hungry(cur, cur->DNA[(cur->p_ctr + 1) % 64], cur->DNA[(cur->p_ctr + 2) % 64], 1);
 
 		case 18:	//абс. условный переход "труп"
 			AP--;
-			look_body(cur, cur->DNA[cur->p_ctr + 1], 0);
+			look_body(cur, cur->DNA[(cur->p_ctr + 1) % 64], 0);
 			cur->energy -= 2;
 			break;
 
 		case 19:	//отн. условный переход "труп"
 			AP--;
-			look_body(cur, cur->DNA[cur->p_ctr + 1], 1);
+			look_body(cur, cur->DNA[(cur->p_ctr + 1) % 64], 1);
 			cur->energy -= 2;
 			break;
 
 		case 20: //Движение
 			AP -= 5;
-			if (move(cur, cur->DNA[cur->p_ctr + 1] % 6)) {
+			if (move(cur, cur->DNA[(cur->p_ctr + 1) % 64] % 6)) {
 				cur->p_ctr += 2;
 				cur->p_ctr = cur->p_ctr % 64;
 				cur->energy -= 10;
@@ -552,7 +553,7 @@ void CellSoup::cell_step(cell* cur) {
 		case 25: //Атака в направлении
 			AP -= 15;
 			cur->energy -= 30;
-			if (heat(cur, cur->DNA[cur->p_ctr + 1] % 6)) {
+			if (heat(cur, cur->DNA[(cur->p_ctr + 1) % 64] % 6)) {
 				cur->p_ctr += 2;
 				cur->p_ctr = cur->p_ctr % 64;
 				break;
@@ -580,31 +581,31 @@ void CellSoup::cell_step(cell* cur) {
 
 		case 33:	//условный переход по абс. адресу "свой - чужой"
 			AP--;
-			compare_feno(cur, cur->DNA[cur->p_ctr + 1], 0);
+			compare_feno(cur, cur->DNA[(cur->p_ctr + 1) % 64], 0);
 			cur->energy -= 2;
 			break;
 
 		case 34:	//условный переход по отн. адресу "свой - чужой"
 			AP--;
-			compare_feno(cur, cur->DNA[cur->p_ctr + 1], 1);
+			compare_feno(cur, cur->DNA[(cur->p_ctr + 1) % 64], 1);
 			cur->energy -= 2;
 			break;
 
 		case 35:	//абс. условный переход "Клетка - нет"
 			AP--;
-			look_cell(cur, cur->DNA[cur->p_ctr + 1], 0);
+			look_cell(cur, cur->DNA[(cur->p_ctr + 1) % 64], 0);
 			cur->energy -= 2;
 			break;
 
 		case 36:	//отн. условный переход "Клетка - нет"
 			AP--;
-			look_cell(cur, cur->DNA[cur->p_ctr + 1], 1);
+			look_cell(cur, cur->DNA[(cur->p_ctr + 1) % 64], 1);
 			cur->energy -= 2;
 			break;
 
 		case 40:	//Копать
 			AP -= 15;
-			dig(cur);
+			dig(cur, 0);
 			cur->energy -= 15;
 			cur->p_ctr++;
 			break;
@@ -621,7 +622,7 @@ void CellSoup::cell_step(cell* cur) {
 			AP -= 1;
 			cur->energy -= 2;
 			if (cur->position->neighbors[cur->dest]->obj_type != CELL) break;
-			is_hungry(&cells[cur->position->neighbors[cur->dest]->cell], cur->DNA[cur->p_ctr + 1], cur->DNA[cur->p_ctr + 1], 0);
+			is_hungry(&cells[cur->position->neighbors[cur->dest]->cell], cur->DNA[(cur->p_ctr + 1) % 64], cur->DNA[(cur->p_ctr + 2) % 64], 0);
 			cur->p_ctr += 3;
 			break;
 
@@ -629,14 +630,14 @@ void CellSoup::cell_step(cell* cur) {
 			AP -= 1;
 			cur->energy -= 2;
 			if (cur->position->neighbors[cur->dest]->obj_type != CELL) break;
-			is_hungry(&cells[cur->position->neighbors[cur->dest]->cell], cur->DNA[cur->p_ctr + 1], cur->DNA[cur->p_ctr + 1], 1);
+			is_hungry(&cells[cur->position->neighbors[cur->dest]->cell], cur->DNA[(cur->p_ctr + 1) % 64], cur->DNA[(cur->p_ctr + 2) % 64], 1);
 			cur->p_ctr += 3;
 			break;
 
 		case 50: //Митоз
 			AP -= 15;
 			cur->energy -= 15;
-			if (mitose(cur, cur->DNA[cur->p_ctr + 1])) {
+			if (mitose(cur, cur->DNA[(cur->p_ctr + 1) % 64])) {
 				cur->p_ctr += 2;
 				cur->p_ctr = cur->p_ctr % 64;
 				break;
@@ -650,7 +651,7 @@ void CellSoup::cell_step(cell* cur) {
 		case 55:	//Обмен энергией
 			AP -= 10;
 			cur->energy -= 15;
-			give_energy(cur, cur->DNA[cur->p_ctr + 1]);
+			give_energy(cur, cur->DNA[(cur->p_ctr + 1) % 64]);
 			cur->p_ctr += 2;
 			cur->p_ctr = cur->p_ctr % 64;
 
@@ -661,9 +662,12 @@ void CellSoup::cell_step(cell* cur) {
 			cur->energy -= 1;
 			break;
 		}
+
+		if (cur->energy <= 0)
+			break;
 	}
 	try_mutate(cur);
-	dig(cur);
+	dig(cur, 1);
 	if (cur->energy <= 0) cell_die(cur, false);
 	if (cur->energy > 250)
 		cur->energy = 250;
@@ -673,8 +677,13 @@ void CellSoup::cell_step(cell* cur) {
 void CellSoup::step() {
 	for (int i = 0; i < bizy.size(); i++)
 	{
-		if (cells[bizy[i]].energy == 0)
-			printf("Died cell in \"bizy\"\n");
+		if (cells[bizy[i]].energy == 0) {
+			std::cout << "Died cell in \"bizy\" DNA:" << std::endl;
+			for (int j = 0; j < 64; j++) {
+				std::cout << cells[bizy[i]].DNA[j] << "; ";
+				std::cout << std::endl;
+			}
+		}
 		cells[bizy[i]].err_ctr = 0;
 		cell_step(&cells[bizy[i]]);
 	}
@@ -867,9 +876,11 @@ bool CellSoup::is_hungry(cell *cur, int operand, int address, int type)
 	return false;
 }
 
-bool CellSoup::dig(cell* cur) {
-	cur->craw += cur->position->mineral_lvl;
-	cur->craw %=  200;
+bool CellSoup::dig(cell* cur, int passive) {
+	cur->craw += (float)cur->position->mineral_lvl * (0.33f * (float)passive);
+	
+	if (cur->craw > 50)
+		cur->craw = 50;
 
 	//tile_color_chаnge(cur->position);
 	return true;

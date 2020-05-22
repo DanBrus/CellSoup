@@ -92,7 +92,7 @@ private:
 	bool give_energy(cell* cur, int oper);
 	bool compare_feno(cell *cur, int address, int type);
 	bool is_hungry(cell *cur, int operand, int address, int type);
-	bool dig(cell* cur);			//Копать минералы
+	bool dig(cell* cur, int passive);			//Копать минералы
 	bool assim(cell* cur);			//Усвоить минералы
 	bool mitose(cell* cur, int mothercare);
 	bool try_mutate(cell* cur);

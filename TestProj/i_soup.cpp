@@ -340,7 +340,7 @@ void i_soup::l_release()
 		if (is_field(mouse_pos) && !Core->is_run) {
 			active_tile = Graphics->is_hit(global_to_local(mouse_pos, field_view));
 			//printf("%d\n", &active_cell);
-			std::cout << active_tile << std::endl;
+			//std::cout << active_tile << std::endl;
 			print_active_tile();
 		}
 	}
