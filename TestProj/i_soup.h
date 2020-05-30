@@ -1,5 +1,5 @@
 #pragma once
-#include<SFML\Graphics.hpp>
+#include <SFML\Graphics.hpp>
 #include "CellSoup.h"
 #include "Field.h"
 
@@ -8,9 +8,41 @@
 class i_soup : public sf::Drawable
 {
 	typedef void(i_soup:: *action)();
-	class TextBox : public sf::Drawable {
-	private:
+	CellSoup *Core;
+	Field *Graphics;
+
+public:
+	class InterfaceObject : public sf::Drawable {
+	protected:
 		int type;
+	public:
+		int get_type() {
+			return type;
+		}
+		virtual void draw(sf::RenderTarget& target, sf::RenderStates states) const;
+		virtual void set_position(sf::Vector2f pos) = 0;
+		virtual void set_size(float size) = 0;
+		virtual bool is_hit(sf::Vector2f vect) = 0;
+		virtual void release() = 0;
+		virtual void input_char(char c) = 0;
+	};
+
+private:
+
+	struct tb_context {
+		std::string title;
+		float value;
+		const sf::Font *font;
+		sf::Vector2f global_size;
+		sf::Vector2f pos;
+		float *control_val;
+		int is_int;
+		float offset;
+	};
+	class TextBox : public i_soup::InterfaceObject {
+	private:
+		//int type = 1;
+		int is_int;
 		sf::Text title;
 		sf::Text content;
 		std::wstring str;
@@ -23,28 +55,40 @@ class i_soup : public sf::Drawable
 
 
 		TextBox();
+		TextBox(i_soup::tb_context context);
 		TextBox(std::string title, float val, const sf::Font * font, sf::Vector2f global_size, sf::Vector2f pos, float offset);
 		~TextBox() {};
 
-		void input_char(char c);
-		void set_control_val(float *val);
+		void set_position(sf::Vector2f pos) override;
+		void set_size(float size) override;
+		void input_char(char c) override;
 		bool is_hit(sf::Vector2f vect);
-		void set_type(int type);
 		void release();
-		void set_title(std::string new_title);
-		void set_val(float new_val);
 
 	private:
+		void set_title(std::string new_title);
+		void set_val(float new_val);
+		void set_is_int(int type);
+		void set_control_val(float *val);
 		void click();
 		void change_control_val();
 		void stabilize_text();
 
 	public:
-		virtual void draw(sf::RenderTarget& target, sf::RenderStates states) const;
+		virtual void draw(sf::RenderTarget& target, sf::RenderStates states) const override;
 	};
 
-	class Button : public sf::Drawable {
+	struct b_context {
+		sf::Vector2f pos;
+		sf::Vector2f size;
+		std::string title;
+		action But_act;
+		sf::Font *font;
+		i_soup *obj;
+	};
+	class Button : public i_soup::InterfaceObject {
 	private:
+		//int type = 0;
 		bool hold;
 		sf::RectangleShape border;
 		sf::Text text;
@@ -60,31 +104,32 @@ class i_soup : public sf::Drawable
 	public:
 		Button();
 		Button(sf::Vector2f pos, sf::Vector2f size, std::string str, action But_act, sf::Font *font, i_soup *obj);
+		Button(i_soup::b_context context);
 		~Button() {};
 
+		void set_size(float size) override;
+		void input_char(char c) override;
 		bool is_hit(sf::Vector2f vect);
-		void set_font(sf::Font *font);
 		void release();
-		void set_text(std::string str);
-		void set_action(action act);
-		void set_position(sf::Vector2f pos);
+		void set_position(sf::Vector2f pos) override;
 		void set_size(sf::Vector2f size);
-		void stabilize_text();
 
 	private:
-		virtual void draw(sf::RenderTarget& target, sf::RenderStates states) const;
+		void stabilize_text();
+		void set_text(std::string str);
+		void set_action(action act);
+		void set_font(sf::Font *font);
+		virtual void draw(sf::RenderTarget& target, sf::RenderStates states) const override;
 	};
-	
-	CellSoup *Core;
-	Field *Graphics;
 
-private:
+
 	sf::View main_view, field_view, controls_view, info_view;
 	sf::Vector2f mouse_pos, field_view_size;
 	sf::Vector2i window_size;
 	float cur_zoom, max_zoom;
 	bool mouse_hold,is_mouse_still;
 	int active_tile;
+	std::vector<InterfaceObject*> controls_clean, controls_run, controls_stop;
 	std::vector<Button> buttons;
 	Button *activeButton;
 	std::vector<sf::Font> fonts;
@@ -114,6 +159,8 @@ public:
 	sf::Vector2f global_to_local(sf::Vector2f vect, const sf::View local);	//Transform global coordinates to view local coordinates
 
 private:
+	void make_buttons(std::vector<b_context> *b_ctxts, sf::Vector2f start_pos, std::vector<InterfaceObject*> *cur_panel);
+	void make_text_boxes(std::vector<tb_context>* tb_ctxts, sf::Vector2f start_pos, std::vector<InterfaceObject*> *cur_panel);
 	void info_init();
 	void controls_init();
 	void release_text_box();

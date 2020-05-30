@@ -180,60 +180,164 @@ void i_soup::info_init()
 	global_info.push_back(cur);
 }
 
+void i_soup::make_buttons(std::vector<b_context>* b_ctxts, sf::Vector2f start_pos, std::vector<InterfaceObject*> *cur_panel)
+{
+	size_t start = buttons.size();
+	for (int i = 0; i < b_ctxts->size(); i++) {
+		(*b_ctxts)[i].pos = sf::Vector2f(start_pos.x, start_pos.y + i * ((*b_ctxts)[0].size.y + 5));
+		Button tmp((*b_ctxts)[i]);
+		buttons.push_back(tmp);
+	}
+	for (int i = start; i < buttons.size(); i++)
+		cur_panel->push_back(&buttons[i]);
+}
+
+void i_soup::make_text_boxes(std::vector<tb_context>* tb_ctxts, sf::Vector2f start_pos, std::vector<InterfaceObject*> *cur_panel)
+{
+	size_t start = text_boxes.size();
+	for (int i = 0; i < tb_ctxts->size(); i++) {
+		(*tb_ctxts)[i].pos = sf::Vector2f(start_pos.x, start_pos.y + i * ((*tb_ctxts)[0].global_size.y + 5));
+		TextBox tmp((*tb_ctxts)[i]);
+		text_boxes.push_back(tmp);
+	}
+	for (int i = start; i < text_boxes.size(); i++)
+		cur_panel->push_back(&text_boxes[i]);
+}
+
 void i_soup::controls_init()
 {
-	//Making buttons
-	buttons.resize(6);
+	buttons.reserve(30);
+	text_boxes.reserve(30);
 	fonts.push_back(sf::Font());
 	fonts[0].loadFromFile("PetscopWide.ttf");
-	for (int i = 0; i < 6; i++) {
-		Button tmp(sf::Vector2f(30, 10 + i * (35)), sf::Vector2f(90.0f, 30.0f), "TEST", NULL, &fonts[0], this);
-		buttons[i] = tmp;
-	}
-	buttons[0].set_text("Start");
-	buttons[0].set_action(&i_soup::start_simulation);
-	buttons[1].set_text("Stop");
-	buttons[1].set_action(&i_soup::stop_simulation);
-	buttons[2].set_text("One step");
-	buttons[2].set_action(&i_soup::one_step);
-	buttons[3].set_text("Make life");
-	buttons[3].set_action(&i_soup::make_life);
-	buttons[4].set_text("Clean field");
-	buttons[4].set_action(&i_soup::clean_field);
-	buttons[5].set_text("Change mode");
-	buttons[5].set_action(&i_soup::change_mode);
+
+	//Making interface for clean field
+	//Making buttons
+
+	std::vector<b_context> b_ctxts;
+	b_context b_cur;
+	b_cur.font = &fonts[0];
+	b_cur.obj = this;
+	b_cur.size = sf::Vector2f(90.0f, 30.0f);
+
+	b_cur.title = "Make life";
+	b_cur.But_act = &i_soup::make_life;
+	b_ctxts.push_back(b_cur);
+
+	make_buttons(&b_ctxts, sf::Vector2f(5, 5), &controls_clean);
 
 	//Making TextBoxes
 
-	for (int i = 0; i < 8; i++) {
-		text_boxes.push_back(TextBox(std::string("EMPTY"), 1.0f, &fonts[0], sf::Vector2f(90, 15), sf::Vector2f(5, 220 + i *(20)), 120.0f));
-	}
-	text_boxes[0].set_title(std::string("Sun level"));
-	text_boxes[0].set_control_val(&Core->sun);
-	text_boxes[0].set_val(12.0f);
-	text_boxes[1].set_title(std::string("Mineral level"));
-	text_boxes[1].set_control_val(&Core->minerals);
-	text_boxes[1].set_val(15.0f);
-	text_boxes[2].set_title(std::string("Radiation level"));
-	text_boxes[2].set_control_val(&Core->radiation);
-	text_boxes[2].set_val(50.0f);
-	text_boxes[3].set_title(std::string("Season duration"));
-	text_boxes[3].set_control_val((float*)&Core->season_during);
-	text_boxes[3].set_type(1);
-	text_boxes[3].set_val(300.0f);
-	text_boxes[4].set_title(std::string("Summer factor"));
-	text_boxes[4].set_control_val(&Core->seasons_differents[0]);
-	text_boxes[4].set_val(1.0f);
-	text_boxes[5].set_title(std::string("Autumn factor"));
-	text_boxes[5].set_control_val(&Core->seasons_differents[1]);
-	text_boxes[5].set_val(0.8f);
-	text_boxes[6].set_title(std::string("Winter factor"));
-	text_boxes[6].set_control_val(&Core->seasons_differents[2]);
-	text_boxes[6].set_val(0.6f);
-	text_boxes[7].set_title(std::string("Spring factor"));
-	text_boxes[7].set_control_val(&Core->seasons_differents[3]);
-	text_boxes[7].set_val(0.9f);
+	std::vector<tb_context> tb_contexts;
+	tb_context cur;
+	cur.font = &fonts[0];
+	cur.global_size = sf::Vector2f(150, 15);
+	cur.offset = 110.0f;
+	cur.is_int = 0;
 
+	cur.title = std::string("Sun level");
+	cur.control_val = &Core->sun;
+	cur.value = 12.0f;
+	tb_contexts.push_back(cur);
+
+	cur.title = std::string("Mineral level");
+	cur.control_val = &Core->minerals;
+	cur.value = 15.0f;
+	tb_contexts.push_back(cur);
+
+	cur.title = std::string("Radiation level");
+	cur.control_val = &Core->radiation;
+	cur.value = 50.0f;
+	tb_contexts.push_back(cur);
+
+	cur.title = std::string("Season duration");
+	cur.control_val = (float*)&Core->season_during;
+	cur.is_int = 1;
+	cur.value = 300.0f;
+	tb_contexts.push_back(cur);
+
+	cur.title = std::string("Summer factor");
+	cur.control_val = &Core->seasons_differents[0];
+	cur.is_int = 0;
+	cur.value = 1.0f;
+	tb_contexts.push_back(cur);
+
+	cur.title = std::string("Autumn factor");
+	cur.control_val = &Core->seasons_differents[1];
+	cur.value = 0.8f;
+	tb_contexts.push_back(cur);
+
+	cur.title = std::string("Winter factor");
+	cur.control_val = &Core->seasons_differents[2];
+	cur.value = 0.6f;
+	tb_contexts.push_back(cur);
+
+	cur.title = std::string("Spring factor");
+	cur.control_val = &Core->seasons_differents[3];
+	cur.value = 0.9f;
+	tb_contexts.push_back(cur);
+
+	cur.title = std::string("Max cell energy");
+	cur.control_val = (float*)&Core->max_energy;
+	cur.value = 250.0f;
+	cur.is_int = 1;
+	tb_contexts.push_back(cur);
+
+	cur.title = std::string("Start cell energy");
+	cur.control_val = (float*)&Core->start_energy;
+	cur.value = 300.0f;
+	tb_contexts.push_back(cur);
+
+	make_text_boxes(&tb_contexts, sf::Vector2f(5, 150), &controls_clean);
+
+	//Making stop-sim interface
+	//Making buttons
+	b_ctxts.clear();
+	
+	b_cur.title = "Start";
+	b_cur.But_act = &i_soup::start_simulation;
+	b_ctxts.push_back(b_cur);
+
+	b_cur.title = "One step";
+	b_cur.But_act = &i_soup::one_step;
+	b_ctxts.push_back(b_cur);
+
+	b_cur.title = "Change mode";
+	b_cur.But_act = &i_soup::change_mode;
+	b_ctxts.push_back(b_cur);
+
+	b_cur.title = "Clean field";
+	b_cur.But_act = &i_soup::clean_field;
+	b_ctxts.push_back(b_cur);
+
+	make_buttons(&b_ctxts, sf::Vector2f(5, 5), &controls_stop);
+	
+	//Making TextBoxes
+	tb_contexts.pop_back();
+	tb_contexts.pop_back();
+	make_text_boxes(&tb_contexts, sf::Vector2f(5, 150), &controls_stop);
+
+	//Making run-sim interface
+	//Making buttons
+
+	b_ctxts.clear();
+
+	b_cur.title = "Stop";
+	b_cur.But_act = &i_soup::stop_simulation;
+	b_ctxts.push_back(b_cur);
+
+	b_cur.title = "Change mode";
+	b_cur.But_act = &i_soup::change_mode;
+	b_ctxts.push_back(b_cur);
+
+	b_cur.title = "Clean field";
+	b_cur.But_act = &i_soup::clean_field;
+	b_ctxts.push_back(b_cur);
+
+	make_buttons(&b_ctxts, sf::Vector2f(5, 5), &controls_run);
+
+	//Making TextBoxes
+	make_text_boxes(&tb_contexts, sf::Vector2f(5, 150), &controls_run);
 }
 
 bool i_soup::is_field(sf::Vector2f pos)
@@ -310,6 +414,7 @@ void i_soup::l_click()
 		is_mouse_still = true;
 	}
 	if (is_controls(mouse_pos)) {
+		/*
 		for (int i = 0; i < buttons.size(); i++) {
 			if (buttons[i].is_hit(global_to_local(mouse_pos, controls_view))) activeButton = &buttons[i];
 		}
@@ -318,6 +423,31 @@ void i_soup::l_click()
 				if (activeTextBox != NULL) release_text_box();
 				activeTextBox = &text_boxes[i];
 				hited = true;
+			}
+		}
+		*/
+		std::vector<InterfaceObject*> *controls = &controls_stop;
+		if (Core->field_empty)
+			controls = &controls_clean;
+		else
+			if (Core->is_run)
+				controls = &controls_run;
+		for (int i = 0; i < (*controls).size(); i++) {
+			if ((*controls)[i]->is_hit(global_to_local(mouse_pos, controls_view))) {
+				switch ((*controls)[i]->get_type()) {
+				case 0:
+					activeButton = (Button*)(*controls)[i];
+					break;
+
+				case 1:
+					if (activeTextBox != NULL) release_text_box();
+					activeTextBox = (TextBox*)(*controls)[i];
+					hited = true;
+					break;
+
+				default:
+					break;
+				}
 			}
 		}
 	}
@@ -480,11 +610,26 @@ void i_soup::draw(sf::RenderTarget & target, sf::RenderStates states) const
 
 	target.setView(controls_view);
 	
+	/*
 	for (int i = 0; i < text_boxes.size(); i++)
 		target.draw(text_boxes[i]);
 	for(int i = 0; i < buttons.size(); i++)
 		target.draw(buttons[i]);
-		
+	*/
+	if (Core->field_empty)
+		for (int i = 0; i < controls_clean.size(); i++)
+			target.draw(*controls_clean[i]);
+	else
+	{
+		if (Core->is_run)
+			for (int i = 0; i < controls_run.size(); i++)
+				target.draw(*controls_run[i]);
+		else
+			for (int i = 0; i < controls_stop.size(); i++)
+				target.draw(*controls_stop[i]);
+	}
+
+
 	target.setView(field_view);
 }
 
@@ -497,7 +642,9 @@ void i_soup::draw(sf::RenderTarget & target, sf::RenderStates states) const
 
 
 
-i_soup::Button::Button() {
+i_soup::Button::Button() 
+{
+	type = 0;
 	border.setFillColor(sf::Color(150, 150, 150, 100));
 	border.setOutlineColor(sf::Color(180, 180, 180, 210));
 	border.setOutlineThickness(3.0f);
@@ -506,6 +653,7 @@ i_soup::Button::Button() {
 
 i_soup::Button::Button(sf::Vector2f pos, sf::Vector2f size, std::string str, action But_act, sf::Font *font, i_soup *obj)
 {
+	type = 0;
 	this->obj = obj;
 	border = sf::RectangleShape(size);
 	border.setPosition(pos);
@@ -524,6 +672,27 @@ i_soup::Button::Button(sf::Vector2f pos, sf::Vector2f size, std::string str, act
 	stabilize_text();
 }
 
+i_soup::Button::Button(i_soup::b_context context)
+{
+	type = 0;
+	this->obj = context.obj;
+	border = sf::RectangleShape(context.size);
+	border.setPosition(context.pos);
+	border.setFillColor(sf::Color(150, 150, 150, 100));
+	border.setOutlineColor(sf::Color(180, 180, 180, 210));
+	border.setOutlineThickness(3.0f);
+	set_font(context.font);
+	hold = false;
+
+	this->But_act = context.But_act;
+	text = sf::Text(context.title, *context.font, context.size.y / 2);
+	text.setFillColor(sf::Color::White);
+	text.setOutlineColor(sf::Color::Black);
+	text.setOutlineThickness(1.0f);
+
+	stabilize_text();
+}
+
 void i_soup::Button::draw(sf::RenderTarget & target, sf::RenderStates states) const
 {
 	target.draw(border, states);
@@ -535,6 +704,16 @@ void i_soup::Button::click() {
 	change_state();
 	if (But_act == 0) return;
 	(obj->*But_act)();
+}
+
+void i_soup::Button::set_size(float size)
+{
+	return;
+}
+
+void i_soup::Button::input_char(char c)
+{
+	return;
 }
 
 bool i_soup::Button::is_hit(sf::Vector2f vect) {
@@ -610,7 +789,8 @@ void i_soup::Button::stabilize_text() {
 
 i_soup::TextBox::TextBox()
 {
-	type = 0;
+	type = 1;
+	is_int = 0;
 	value = 1.0f;
 	is_active = false;
 	title = sf::Text();
@@ -619,9 +799,38 @@ i_soup::TextBox::TextBox()
 	control_val = NULL;
 }
 
+i_soup::TextBox::TextBox(i_soup::tb_context context)
+{
+	type = 1;
+	is_int = context.is_int;
+	value = context.value;
+	is_active = false;
+
+	title = sf::Text(context.title, *context.font, context.global_size.y * 0.9f);
+	title.setColor(sf::Color::White);
+	title.setPosition(context.pos);
+	
+
+	border = sf::RectangleShape(sf::Vector2f(context.global_size.x - context.offset, context.global_size.y));
+	border.setPosition(sf::Vector2f(context.offset + context.pos.x, context.pos.y));
+	border.setFillColor(sf::Color(120, 120, 120, 100));
+	border.setOutlineColor(sf::Color(255, 255, 255, 200));
+	border.setOutlineThickness(2.0f);
+
+	str = sf::String(std::to_string(value));
+	str.resize(4);
+	content = sf::Text(str, *context.font, border.getGlobalBounds().height * 0.6f);
+	content.setColor(sf::Color(255, 255, 250, 255));
+
+	set_control_val(context.control_val);
+
+	stabilize_text();
+}
+
 i_soup::TextBox::TextBox(std::string title, float val, const sf::Font * font, sf::Vector2f global_size, sf::Vector2f pos, float offset)
 {
-	type = 0;
+	type = 1;
+	is_int = 0;
 	value = val;
 	is_active = false;
 
@@ -644,6 +853,20 @@ i_soup::TextBox::TextBox(std::string title, float val, const sf::Font * font, sf
 	control_val = NULL;
 
 	stabilize_text();
+}
+
+void i_soup::TextBox::set_position(sf::Vector2f pos)
+{
+	sf::Vector2f offset = pos - border.getPosition();
+
+	border.setPosition(pos + border.getPosition());
+	title.setPosition(pos - title.getPosition());
+	content.setPosition(pos - content.getPosition());
+}
+
+void i_soup::TextBox::set_size(float size)
+{
+	return;
 }
 
 void i_soup::TextBox::input_char(char c)
@@ -676,9 +899,9 @@ bool i_soup::TextBox::is_hit(sf::Vector2f vect)
 	return false;
 }
 
-void i_soup::TextBox::set_type(int type)
+void i_soup::TextBox::set_is_int(int is_int)
 {
-	this->type = type;
+	this->is_int = is_int;
 }
 
 void i_soup::TextBox::click()
@@ -704,8 +927,10 @@ void i_soup::TextBox::change_control_val() {
 		content.setString(str);
 		return;
 	}
-	if (type == 0) *control_val = value;
-	if (type == 1) *(int*)control_val = value;
+	if (is_int == 0) 
+		*control_val = value;
+	if (is_int == 1) 
+		*(int*)control_val = value;
 	
 	str = sf::String(std::to_string(value));
 	str.resize(4);
@@ -742,6 +967,11 @@ void i_soup::TextBox::draw(sf::RenderTarget & target, sf::RenderStates states) c
 	target.draw(border);
 	target.draw(title);
 	target.draw(content);
-	if (type == 0) *control_val = value;
-	if (type == 1) *(int*)control_val = value;
+	//if (is_int == 0) *control_val = value;
+	//if (is_int == 1) *(int*)control_val = value;
+}
+
+void i_soup::InterfaceObject::draw(sf::RenderTarget & target, sf::RenderStates states) const
+{
+	return;
 }

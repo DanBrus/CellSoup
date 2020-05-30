@@ -150,7 +150,10 @@ void Field::Tiles::fill_vertices()
 int Field::Tiles::change_tile_color(unsigned int R, unsigned int G, unsigned int B, unsigned int ctr)
 {
 	if (ctr >= tiles.size()) return 1;
-	if ((R > 255) || (G > 255) || (B > 255)) return 2;
+
+	if (R > 255) R = 255;
+	if (G > 255) G = 255;
+	if (B > 255) B = 255;
 
 	if (tiles[ctr].change_color(R, G, B)) return 3;
 

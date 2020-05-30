@@ -413,8 +413,8 @@ void CellSoup::tile_color_chаnge(tile* cur) {
 		}
 		else {
 			G = 0;
-			R = (double)cells[cur->cell].energy / 500.0 * 255;
-			B = 255.0 - ((double)cells[cur->cell].energy / 500.0 * 255);
+			R = (double)cells[cur->cell].energy / max_energy * 255;
+			B = 255.0 - ((double)cells[cur->cell].energy / max_energy * 255);
 		}
 
 		Graphics->change_tile_color(R, G, B, cur->row, cur->col);
@@ -444,7 +444,7 @@ void CellSoup::make_life(int density)
 	srand(clock());
 	for (unsigned int i = cols; i < rows*cols - cols - 1; i++) {
 		int r = (rand() + clock()/2) % 100;
-		if (r <= density) make_cell(&tiles[i], 0);
+		if (r <= density) make_cell(&tiles[i], (rand() + clock())% 6, NULL, NULL, start_energy);
 	}
 	update_graphics();
 }
@@ -461,98 +461,123 @@ void CellSoup::cell_step(cell* cur) {
 	while (AP > 0) {
 		switch (cur->DNA[cur->p_ctr]) {
 		case 1:
-			turn(cur, 1);
 			cur->p_ctr++;
 			cur->p_ctr = cur->p_ctr % 64;
 			cur->energy -= 5;
+			if (cur->energy <= 0)
+				break;
 			AP--;
+			turn(cur, 1);
 			break;
 
 		case 2:
-			turn(cur, 2);
 			cur->p_ctr++;
 			cur->p_ctr = cur->p_ctr % 64;
 			cur->energy -= 5;
+			if (cur->energy <= 0)
+				break;
 			AP--;
+			turn(cur, 2);
 			break;
 
 		case 3:
-			turn(cur, 3);
 			cur->p_ctr++;
 			cur->p_ctr = cur->p_ctr % 64;
 			cur->energy -= 5;
+			if (cur->energy <= 0)
+				break;
 			AP--;
+			turn(cur, 3);
 			break;
 
 		case 4:
-			turn(cur, 4);
 			cur->p_ctr++;
 			cur->p_ctr = cur->p_ctr % 64;
 			cur->energy -= 5;
+			if (cur->energy <= 0)
+				break;
 			AP--;
+			turn(cur, 4);
 			break;
 
 		case 5:
-			turn(cur, 5);
 			cur->p_ctr++;
 			cur->p_ctr = cur->p_ctr % 64;
 			cur->energy -= 5;
+			if (cur->energy <= 0)
+				break;
 			AP--;
+			turn(cur, 5);
 			break;
 
 		case 10:	//Абс. условный переход "голод"
 			AP--;
 			cur->energy -= 2;
+			if (cur->energy <= 0)
+				break;
 			is_hungry(cur, cur->DNA[(cur->p_ctr + 1) % 64], cur->DNA[(cur->p_ctr + 2) % 64], 0);
 
 		case 12:	//абс. условный переход "пусто"
 			AP--;
-			look_empty(cur, cur->DNA[(cur->p_ctr + 1) % 64], 0);
 			cur->energy -= 2;
+			if (cur->energy <= 0)
+				break;
+			look_empty(cur, cur->DNA[(cur->p_ctr + 1) % 64], 0);
 			break;
 
 		case 13:	//отн. условный переход "пусто"
 			AP--;
-			look_empty(cur, cur->DNA[(cur->p_ctr + 1) % 64], 1);
 			cur->energy -= 2;
+			if (cur->energy <= 0)
+				break;
+			look_empty(cur, cur->DNA[(cur->p_ctr + 1) % 64], 1);
 			break;
 
 		case 15:	//отн. условный переход "голод"
 			AP--;
 			cur->energy -= 2;
+			if (cur->energy <= 0)
+				break;
 			is_hungry(cur, cur->DNA[(cur->p_ctr + 1) % 64], cur->DNA[(cur->p_ctr + 2) % 64], 1);
 
 		case 18:	//абс. условный переход "труп"
 			AP--;
-			look_body(cur, cur->DNA[(cur->p_ctr + 1) % 64], 0);
 			cur->energy -= 2;
+			if (cur->energy <= 0)
+				break;
+			look_body(cur, cur->DNA[(cur->p_ctr + 1) % 64], 0);
 			break;
 
 		case 19:	//отн. условный переход "труп"
 			AP--;
-			look_body(cur, cur->DNA[(cur->p_ctr + 1) % 64], 1);
 			cur->energy -= 2;
+			if (cur->energy <= 0)
+				break;
+			look_body(cur, cur->DNA[(cur->p_ctr + 1) % 64], 1);
 			break;
 
 		case 20: //Движение
 			AP -= 5;
+			cur->energy -= 10;
+			if (cur->energy <= 0)
+				break;
 			if (move(cur, cur->DNA[(cur->p_ctr + 1) % 64] % 6)) {
 				cur->p_ctr += 2;
 				cur->p_ctr = cur->p_ctr % 64;
-				cur->energy -= 10;
 				break;
 			}
 			else {
 				AP++;
 				cur->p_ctr += 2;
 				cur->p_ctr = cur->p_ctr % 64;
-				cur->energy -= 10;
 				break;
 			}
 
 		case 25: //Атака в направлении
 			AP -= 15;
 			cur->energy -= 30;
+			if (cur->energy <= 0)
+				break;
 			if (heat(cur, cur->DNA[(cur->p_ctr + 1) % 64] % 6)) {
 				cur->p_ctr += 2;
 				cur->p_ctr = cur->p_ctr % 64;
@@ -568,6 +593,8 @@ void CellSoup::cell_step(cell* cur) {
 		case 30: //фотосинтез
 			AP -= 15;
 			cur->energy -= 20;
+			if (cur->energy <= 0)
+				break;
 			if (photo(cur)) {
 				cur->p_ctr++;
 				cur->p_ctr = cur->p_ctr % 64;
@@ -581,46 +608,60 @@ void CellSoup::cell_step(cell* cur) {
 
 		case 33:	//условный переход по абс. адресу "свой - чужой"
 			AP--;
-			compare_feno(cur, cur->DNA[(cur->p_ctr + 1) % 64], 0);
 			cur->energy -= 2;
+			if (cur->energy <= 0)
+				break;
+			compare_feno(cur, cur->DNA[(cur->p_ctr + 1) % 64], 0);
 			break;
 
 		case 34:	//условный переход по отн. адресу "свой - чужой"
 			AP--;
-			compare_feno(cur, cur->DNA[(cur->p_ctr + 1) % 64], 1);
 			cur->energy -= 2;
+			if (cur->energy <= 0)
+				break;
+			compare_feno(cur, cur->DNA[(cur->p_ctr + 1) % 64], 1);
 			break;
 
 		case 35:	//абс. условный переход "Клетка - нет"
 			AP--;
-			look_cell(cur, cur->DNA[(cur->p_ctr + 1) % 64], 0);
 			cur->energy -= 2;
+			if (cur->energy <= 0)
+				break;
+			look_cell(cur, cur->DNA[(cur->p_ctr + 1) % 64], 0);
 			break;
 
 		case 36:	//отн. условный переход "Клетка - нет"
 			AP--;
-			look_cell(cur, cur->DNA[(cur->p_ctr + 1) % 64], 1);
 			cur->energy -= 2;
+			if (cur->energy <= 0)
+				break;
+			look_cell(cur, cur->DNA[(cur->p_ctr + 1) % 64], 1);
 			break;
 
 		case 40:	//Копать
 			AP -= 15;
-			dig(cur, 0);
 			cur->energy -= 15;
+			if (cur->energy <= 0)
+				break;
+			dig(cur, 0);
 			cur->p_ctr++;
 			break;
 
 		case 45: //Усвоить
 			AP -= 15;
+			cur->energy -= 20;
+			if (cur->energy <= 0)
+				break;
 			assim(cur);
 			cur->p_ctr++;
 			cur->p_ctr = cur->p_ctr % 64;
-			cur->energy -= 20;
 			break;
 
 		case 47:	//Абс. усл. переход "сосед голоден"
 			AP -= 1;
 			cur->energy -= 2;
+			if (cur->energy <= 0)
+				break;
 			if (cur->position->neighbors[cur->dest]->obj_type != CELL) break;
 			is_hungry(&cells[cur->position->neighbors[cur->dest]->cell], cur->DNA[(cur->p_ctr + 1) % 64], cur->DNA[(cur->p_ctr + 2) % 64], 0);
 			cur->p_ctr += 3;
@@ -629,6 +670,8 @@ void CellSoup::cell_step(cell* cur) {
 		case 48:	//Отн. усл. переход "сосед голоден"
 			AP -= 1;
 			cur->energy -= 2;
+			if (cur->energy <= 0)
+				break;
 			if (cur->position->neighbors[cur->dest]->obj_type != CELL) break;
 			is_hungry(&cells[cur->position->neighbors[cur->dest]->cell], cur->DNA[(cur->p_ctr + 1) % 64], cur->DNA[(cur->p_ctr + 2) % 64], 1);
 			cur->p_ctr += 3;
@@ -637,6 +680,8 @@ void CellSoup::cell_step(cell* cur) {
 		case 50: //Митоз
 			AP -= 15;
 			cur->energy -= 15;
+			if (cur->energy <= 0)
+				break;
 			if (mitose(cur, cur->DNA[(cur->p_ctr + 1) % 64])) {
 				cur->p_ctr += 2;
 				cur->p_ctr = cur->p_ctr % 64;
@@ -651,6 +696,8 @@ void CellSoup::cell_step(cell* cur) {
 		case 55:	//Обмен энергией
 			AP -= 10;
 			cur->energy -= 15;
+			if (cur->energy <= 0)
+				break;
 			give_energy(cur, cur->DNA[(cur->p_ctr + 1) % 64]);
 			cur->p_ctr += 2;
 			cur->p_ctr = cur->p_ctr % 64;
@@ -669,8 +716,8 @@ void CellSoup::cell_step(cell* cur) {
 	try_mutate(cur);
 	dig(cur, 1);
 	if (cur->energy <= 0) cell_die(cur, false);
-	if (cur->energy > 250)
-		cur->energy = 250;
+	if (cur->energy > max_energy)
+		cur->energy = max_energy;
 	//if (graph_style == 1) tile_color_chаnge(cur->position);
 }
  
@@ -992,6 +1039,7 @@ void CellSoup::generator() {
 				this->step_ctr = 0;
 			}
 			if (b_make_life && field_empty) {
+				Cl_17();
 				make_life();
 				b_make_life = false;
 				field_empty = false;

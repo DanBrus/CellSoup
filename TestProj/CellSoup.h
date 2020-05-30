@@ -49,7 +49,7 @@ private:
 	std::vector<int> bizy;
 	int died;
 	unsigned int rows, cols;
-	int season_during, season_ctr, graph_style;
+	int season_during, season_ctr, graph_style, max_energy, start_energy;
 	float sun, radiation, minerals;
 	float seasons_differents[4];
 	unsigned long long step_ctr;
