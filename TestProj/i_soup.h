@@ -25,19 +25,20 @@ public:
 		virtual bool is_hit(sf::Vector2f vect) = 0;
 		virtual void release() = 0;
 		virtual void input_char(char c) = 0;
+		virtual void update() = 0;
 	};
 
 private:
 
 	struct tb_context {
-		std::string title;
-		float value;
-		const sf::Font *font;
-		sf::Vector2f global_size;
-		sf::Vector2f pos;
-		float *control_val;
-		int is_int;
-		float offset;
+		std::string title;					//Заголовок информационного поля
+		float value;						//Начальное значение поля (влияет на значение в ядре при инициализации)
+		const sf::Font *font;				//Указатель на шрифт
+		sf::Vector2f global_size;			//Размер прямоугольника, в который будет вписан объект
+		sf::Vector2f pos;					//Расположение поля (опорная точка - верхний левый угол прямоуг-ка)
+		float *control_val;					//Указатель на контрольное значение
+		int is_int;							//Является ли контрольное значение целочисленным? (0 если нет)
+		float offset;						//Отступ начала текстового поля по Х от начала заголовка поля
 	};
 	class TextBox : public i_soup::InterfaceObject {
 	private:
@@ -62,6 +63,7 @@ private:
 		void set_position(sf::Vector2f pos) override;
 		void set_size(float size) override;
 		void input_char(char c) override;
+		void update() override;
 		bool is_hit(sf::Vector2f vect);
 		void release();
 
@@ -73,18 +75,18 @@ private:
 		void click();
 		void change_control_val();
 		void stabilize_text();
-
+		
 	public:
 		virtual void draw(sf::RenderTarget& target, sf::RenderStates states) const override;
 	};
 
 	struct b_context {
-		sf::Vector2f pos;
-		sf::Vector2f size;
-		std::string title;
-		action But_act;
-		sf::Font *font;
-		i_soup *obj;
+		sf::Vector2f pos;					//Расположение поля (опорная точка - верхний левый угол прямоуг-ка)
+		sf::Vector2f size;					//Размер кнопки
+		std::string title;					//Текст кнопки
+		action But_act;						//Указатель на исполняемую кнопкой функцию/метод
+		sf::Font *font;						//Указатель на шрифт для текста
+		i_soup *obj;						//Указатель на объект класса, исполняющего метод
 	};
 	class Button : public i_soup::InterfaceObject {
 	private:
@@ -109,6 +111,7 @@ private:
 
 		void set_size(float size) override;
 		void input_char(char c) override;
+		void update() override;
 		bool is_hit(sf::Vector2f vect);
 		void release();
 		void set_position(sf::Vector2f pos) override;
@@ -122,6 +125,17 @@ private:
 		virtual void draw(sf::RenderTarget& target, sf::RenderStates states) const override;
 	};
 
+	struct il_context {
+		std::string title;					//Заголовок информационного поля
+		int *control_value;					//Указатель на контролируемое значение
+		enum {INT, FLOAT, ULLINT} type;		//Тип контролируемого значения
+		sf::Vector2f pos;					//Позиция поля заголовка
+		sf::Vector2f offset;				//Смещение информационного поля относительно заголовка (0,0) для размещения информации сразу после заголовка
+		sf::Font *font;						//Указаель на шрифт для текста
+	};
+	class InfoLabel: public i_soup::InterfaceObject {
+
+	};
 
 	sf::View main_view, field_view, controls_view, info_view;
 	sf::Vector2f mouse_pos, field_view_size;
@@ -171,6 +185,8 @@ private:
 	void change_mode();
 	void one_step();
 	void print_active_tile();
+
+	void update_controls();
 
 	virtual void draw(sf::RenderTarget& target, sf::RenderStates states) const;
 };

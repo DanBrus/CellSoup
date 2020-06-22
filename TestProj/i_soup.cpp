@@ -501,6 +501,7 @@ sf::Vector2f i_soup::global_to_local(sf::Vector2f vect, const sf::View local)
 
 void i_soup::start_simulation()
 {
+	update_controls();
 	active_tile = -1;
 	print_active_tile();
 	Core->is_run = true;
@@ -508,11 +509,13 @@ void i_soup::start_simulation()
 
 void i_soup::stop_simulation()
 {
+	update_controls();
 	Core->is_run = false;
 }
 
 void i_soup::make_life()
 {
+	update_controls();
 	Core->is_run = false;
 	Sleep(50);
 	Core->free_field = false;
@@ -633,7 +636,18 @@ void i_soup::draw(sf::RenderTarget & target, sf::RenderStates states) const
 	target.setView(field_view);
 }
 
-
+void i_soup::update_controls()
+{
+	for (int i = 0; i < controls_clean.size(); i++) {
+		controls_clean[i]->update();
+	}
+	for (int i = 0; i < controls_run.size(); i++) {
+		controls_run[i]->update();
+	}
+	for (int i = 0; i < controls_stop.size(); i++) {
+		controls_stop[i]->update();
+	}
+}
 
 
 
@@ -714,6 +728,10 @@ void i_soup::Button::set_size(float size)
 void i_soup::Button::input_char(char c)
 {
 	return;
+}
+
+void i_soup::Button::update()
+{
 }
 
 bool i_soup::Button::is_hit(sf::Vector2f vect) {
@@ -881,6 +899,19 @@ void i_soup::TextBox::input_char(char c)
 	if (c == 50) str.push_back('.');
 	content.setString(str);
 
+}
+
+void i_soup::TextBox::update()
+{
+	if (is_int == 0)
+		value = *control_val;
+	if (is_int == 1)
+		value = (float)*control_val;
+
+	str = sf::String(std::to_string(value));
+	str.resize(4);
+	content.setString(str);
+	return;
 }
 
 void i_soup::TextBox::set_control_val(float * val)
