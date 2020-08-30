@@ -185,6 +185,7 @@ private:
 	void change_mode();
 	void one_step();
 	void print_active_tile();
+	void update_zoom();
 
 	void update_controls();
 

@@ -24,6 +24,7 @@ class Field
 		Borders(float *offers, float a, int rows, int cols);
 		void calculate_tailmap(int rows, int cols, sf::Vector2f start, float a);
 		void Hexagon(float coreX, float coreY, float r, sf::Vertex *vertices);
+		void change_field_size(int rows, int cols, float *offers);
 		std::vector<tile> *get_tiles() {
 			return &tiles;
 		}
@@ -59,6 +60,7 @@ class Field
 	public:
 		Tiles() {}
 		Tiles(int rows, int cols, std::vector<tile> *tiles_);
+		void change_field_size(int rows, int cols, std::vector<tile>* tiles_);
 		void fill_vertices();
 		int change_tile_color(unsigned int R, unsigned int G, unsigned int B, unsigned int alpha, unsigned int ctr);
 		int change_tile_color(unsigned int R, unsigned int G, unsigned int B, unsigned int ctr);
@@ -90,6 +92,7 @@ private:
 	Borders net;
 	Tiles field;
 	unsigned int rows, cols;
+	float offers[4];
 
 public:
 	Field(){}
@@ -103,6 +106,8 @@ public:
 	Tiles *get_tiles() {		//Функция отвечает за получение Tiles для отрисовки
 		return &field;
 	}
+
+	void change_size(int rows, int cols);
 
 	sf::Vector2f get_size();
 

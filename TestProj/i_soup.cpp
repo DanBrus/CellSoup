@@ -207,7 +207,7 @@ void i_soup::make_text_boxes(std::vector<tb_context>* tb_ctxts, sf::Vector2f sta
 void i_soup::controls_init()
 {
 	buttons.reserve(30);
-	text_boxes.reserve(30);
+	text_boxes.reserve(50);
 	fonts.push_back(sf::Font());
 	fonts[0].loadFromFile("PetscopWide.ttf");
 
@@ -286,6 +286,16 @@ void i_soup::controls_init()
 	cur.title = std::string("Start cell energy");
 	cur.control_val = (float*)&Core->start_energy;
 	cur.value = 300.0f;
+	tb_contexts.push_back(cur);
+
+	cur.title = std::string("Rows");
+	cur.control_val = (float*)&Core->rows;
+	cur.value = 80.0f;
+	tb_contexts.push_back(cur);
+
+	cur.title = std::string("Cols");
+	cur.control_val = (float*)&Core->cols;
+	cur.value = 100.0f;
 	tb_contexts.push_back(cur);
 
 	make_text_boxes(&tb_contexts, sf::Vector2f(5, 150), &controls_clean);
@@ -465,6 +475,7 @@ void i_soup::l_release()
 {
 	mouse_hold = false;
 
+	update_controls();
 	if (is_mouse_still) {
 		is_mouse_still = false;
 		if (is_field(mouse_pos) && !Core->is_run) {
@@ -487,7 +498,7 @@ void i_soup::key_pressed(sf::Event::KeyEvent key)
 void i_soup::set_step_info()
 {
 	global_info[1].setString(std::to_string(Core->step_ctr));
-	global_info[3].setString(std::to_string(Core->bizy.size()));
+	global_info[3].setString(std::to_string(CellSoup::Cell::bizy.size()));
 	global_info[5].setString(std::to_string(Core->season_ctr));
 }
 
@@ -515,12 +526,15 @@ void i_soup::stop_simulation()
 
 void i_soup::make_life()
 {
+	Graphics->change_size(Core->rows, Core->cols);
 	update_controls();
 	Core->is_run = false;
 	Sleep(50);
 	Core->free_field = false;
 	Sleep(50);
 	Core->b_make_life = true;
+	Sleep(50);
+	update_zoom();
 }
 
 void i_soup::clean_field()
@@ -537,7 +551,7 @@ void i_soup::one_step()
 
 void i_soup::print_active_tile()
 {
-	cell *cur;
+	CellSoup::Cell *cur;
 
 	for (int i = 0; i < 8; i++)
 		cell_info[i].setString(std::string("-"));
@@ -547,23 +561,25 @@ void i_soup::print_active_tile()
 	if (active_tile == -1)
 		return;
 
+	cur = &Core->cells[Core->tiles[active_tile].cell];
+	int *DNA = cur->get_DNA();
+	int *linker = cur->get_linker();
 	switch (Core->tiles[active_tile].obj_type) {
 	case 0:		//EMPTY
 		break;
 
 	case 1:		//CELL
-		cur = &Core->cells[Core->tiles[active_tile].cell];
-		cell_info[0].setString(std::to_string(cur->ctr));
-		cell_info[1].setString(std::to_string(cur->energy));
-		cell_info[2].setString(std::to_string(cur->dest));
-		cell_info[3].setString(std::to_string(cur->meat));
-		cell_info[4].setString(std::to_string(cur->sun));
-		cell_info[5].setString(std::to_string(cur->minerals));
-		cell_info[6].setString(std::to_string(cur->craw));
-		cell_info[7].setString(std::to_string(cur->p_ctr));
+		cell_info[0].setString(std::to_string(cur->get_ctr()));
+		cell_info[1].setString(std::to_string(cur->get_energy()));
+		cell_info[2].setString(std::to_string(cur->get_dest()));
+		cell_info[3].setString(std::to_string(cur->get_meat()));
+		cell_info[4].setString(std::to_string(cur->get_sun()));
+		cell_info[5].setString(std::to_string(cur->get_minerals()));
+		cell_info[6].setString(std::to_string(cur->get_craw()));
+		cell_info[7].setString(std::to_string(cur->get_p_ctr()));
 
 		for (int i = 0; i < 64; i++)
-			dna_info[i].setString(std::to_string(cur->DNA[i]));
+			dna_info[i].setString(std::to_string(linker[DNA[i]]));
 		break;
 
 	case 2:		//BODY
@@ -576,6 +592,24 @@ void i_soup::print_active_tile()
 	}
 
 	return;
+}
+
+void i_soup::update_zoom()
+{
+	sf::Vector2f size = Graphics->get_size();
+	float relation = window_size.x * 0.83f / window_size.y *0.85f;
+	if (size.x / size.y > size.y * 0.83f * window_size.x / 0.85f * window_size.y) {
+		field_view_size = sf::Vector2f(size.y * relation, size.y);
+		max_zoom = 1 / (float)Core->rows * 15;
+		if (Core->rows < 15) max_zoom = 1;
+	}
+	else {
+		field_view_size = sf::Vector2f(size.x, size.x / relation);
+		max_zoom = 1 / (float)Core->cols * 15;
+		if (Core->cols < 15) max_zoom = 1;
+	}
+
+	field_view.setSize(field_view_size);
 }
 
 void i_soup::change_mode()
@@ -906,7 +940,7 @@ void i_soup::TextBox::update()
 	if (is_int == 0)
 		value = *control_val;
 	if (is_int == 1)
-		value = (float)*control_val;
+		value = (float)*(unsigned int *)control_val;
 
 	str = sf::String(std::to_string(value));
 	str.resize(4);

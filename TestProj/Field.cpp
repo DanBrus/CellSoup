@@ -7,13 +7,13 @@ Field::Field(int rows, int cols, sf::Vector2u box)
 	this->rows = rows;
 	this->cols = cols;
 	//Организовать границы
-	float offers[4], a;
+	float a;
 
 	offers[0] = box.x / 100;
 	offers[1] = box.y / 70;
 	offers[2] = box.x - offers[0];
 	offers[3] = box.y - offers[1];
-	a = (offers[2] - offers[0]) / cols;
+	a = (offers[2] - offers[0]) / cols;			//Смещение строк относительно друг друга
 	if (((offers[3] - offers[1]) / a * 0.866) < rows) a = (offers[3] - offers[1]) / rows / 0.866;
 	if ((offers[0] - a) < 0) {
 		offers[0] += a / 2;
@@ -52,6 +52,14 @@ int Field::is_hit(sf::Vector2f pos)
 	return field.is_hit(pos, rows, cols);
 }
 
+void Field::change_size(int rows, int cols)
+{
+	this->rows = rows;
+	this->cols = cols;
+	net.change_field_size(rows, cols, offers);
+	field.change_field_size(rows, cols, net.get_tiles());
+}
+
 sf::Vector2f Field::get_size() {
 	return field.get_size();
 }
@@ -65,10 +73,13 @@ Field::Borders::Borders(float * offers, float a, int rows, int cols)
 
 }
 
+
+
 void Field::Borders::calculate_tailmap(int rows, int cols, sf::Vector2f start, float a)
 {
 	float borderX = start.x;
 	bool offer = false;
+	tiles.clear();
 	for (int row = rows - 1; row >= 0; row--) {
 		for (int col = cols - 1; col >= 0; col--) {
 			Hexagon(start.x, start.y, a / 1.73, &m_vertices[(row * cols + col) * 12]);
@@ -107,6 +118,14 @@ void Field::Borders::Hexagon(float coreX, float coreY, float r, sf::Vertex * ver
 	tiles.push_back(cur);
 }
 
+void Field::Borders::change_field_size(int rows, int cols, float *offers)
+{
+	m_vertices.resize(rows * cols * 12);
+
+	float a = (offers[2] - offers[0]) / cols;
+	calculate_tailmap(rows, cols, sf::Vector2f(offers[0], offers[1]), a);
+}
+
 Field::Tiles::Tiles(int rows, int cols, std::vector<tile>* tiles_)
 {
 	tile cur;
@@ -121,8 +140,24 @@ Field::Tiles::Tiles(int rows, int cols, std::vector<tile>* tiles_)
 	fill_vertices();
 }
 
+void Field::Tiles::change_field_size(int rows, int cols, std::vector<tile>* tiles_)
+{
+	tiles.clear();
+	tiles.reserve(rows*cols);
+
+	tile cur;
+	for (int i = tiles_->size() - 1; i >= 0; i--) {
+		cur = tiles_[0][i];
+		cur.count = tiles_->size() - i - 1;
+		tiles.push_back(cur);
+	}
+
+	fill_vertices();
+}
+
 void Field::Tiles::fill_vertices()
 {
+	m_vertices.clear();
 	m_vertices.resize(tiles.size() * 12);
 
 	for (unsigned int i = 0; i < tiles.size(); i++) {
