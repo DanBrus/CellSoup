@@ -295,43 +295,5 @@ int Field::Tiles::is_hit(sf::Vector2f pos, int rows, int cols)
 	else
 		return neightbor->count;
 
-	/*
-	if (cur->verteces[2].y > pos.y) {	//Выше основного прямоугольника?
-		if (cur->centre.x < pos.x) {	//Правее центра?
-			if((cur->verteces[1].y - cur->verteces[0].y) / (cur->verteces[1].x - cur->verteces[0].x) * (pos.x - cur->verteces[0].x) > pos.y) //Попал ли в треугольник?
-				return row * cols + col;
-			else {
-				if (row == rows - 1)
-					return -1;
-				if (col == cols - 1 && row % 2 == 1)
-					return -1;
-				col += row % 2;
-				row += 1;
-			}
-		}
-		else {
-			if ((cur->verteces[0].y - cur->verteces[5].y) / (cur->verteces[0].x - cur->verteces[5].x) * (pos.x - cur->verteces[5].x) > pos.y) //Попал ли в треугольник?
-				return row * cols + col;
-			else {
-				if (row == rows - 1)
-					return -1;
-				if (col == 0 && row % 2 == 0)
-					return -1;
-				row += 1;
-				col -= row % 2;
-			}
-		}
-	}
-	else {
-		//Нижний ряд?
-		if (row == 0) {
-			if (cur->centre.x < pos.x) {	//Правее центра?
-				
-			}
-		}
-	}
-	
-	return row * cols + col; //Попал
-	*/
 }
 

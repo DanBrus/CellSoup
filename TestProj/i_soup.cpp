@@ -562,8 +562,8 @@ void i_soup::print_active_tile()
 		return;
 
 	cur = &Core->cells[Core->tiles[active_tile].cell];
-	int *DNA = cur->get_DNA();
-	int *linker = cur->get_linker();
+	const int *DNA = cur->get_DNA();
+	const int *linker = cur->get_linker();
 	switch (Core->tiles[active_tile].obj_type) {
 	case 0:		//EMPTY
 		break;

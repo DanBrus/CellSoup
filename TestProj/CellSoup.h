@@ -50,7 +50,7 @@ private:
 	int season_during 							  //Информация для управления симуляцией: Длительность сезона
 		,season_ctr 							  //Информация для управления симуляцией: Кол-во сезонов
 		,graph_style 							  //Информация для управления симуляцией: Текущий графический стиль
-		,max_energy;								  //Информация для управления симуляцией: Макситальное кол-во энергии у клетки
+		,max_energy;							  //Информация для управления симуляцией: Макситальное кол-во энергии у клетки
 	static int start_energy 					  //Информация для управления симуляцией: Начальная энергия клетки
 		,olding_start 							  //Информация для управления симуляцией: Возраст начала старения клетки
 		,olding_speed 							  //Информация для управления симуляцией: Скорость старения клетки
@@ -190,23 +190,25 @@ public:
 		bool dig(int, int, int);						//Копать минералы
 		bool assim(int offs, int type, int);			//Усвоить минералы
 		bool mitose(int mothercare, int, int);			//Дать потомство
-		bool change_fero(int op1, int op2, int op3);	//Изменить фромоны (операнд, равный 0 -> оставить как было)
+		bool change_fero(int op1, int op2, int op3);	//Изменить фeромоны (операнд, равный 0 -> оставить как было)
 		bool energy_paying(int pay, int, int);			//Вспом. действие затраты энергии
 		bool cmp_DNA(int confidence, int address, int type);
 
-	public:												
+	public:			
+		const Cell* get_neightbor();					//Получить указатель на соседа (если есть)
 		void operator()();								//Выполнить действие активного гена
 		void set_ctr(int val);							//Изменить активный ген
-		int get_ctr();									//Полусить индекс клетки
-		int get_meat();									//Полусить счётчик хищничества
-		int get_sun();									//Полусить счётчикфотосинтеза
-		int get_minerals();								//Получить счётчик минералов
-		int get_energy();								//Получить кол-во энергии клетки
-		int get_dest();									//Получить направление клетки
-		int get_craw();									//Получить апас минералов клетки
-		int get_p_ctr();								//Получить индекс автивного гена
-		int* get_DNA();									//Получить указатель на ДНК
-		int* get_linker();								//Получить указатель на фенотип
+		int get_ctr() const;									//Полусить индекс клетки
+		int get_meat() const;									//Полусить счётчик хищничества
+		int get_sun() const;									//Полусить счётчикфотосинтеза
+		int get_minerals() const;								//Получить счётчик минералов
+		int get_energy() const;								//Получить кол-во энергии клетки
+		int get_dest() const;									//Получить направление клетки
+		int get_craw() const;									//Получить апас минералов клетки
+		int get_p_ctr() const;								//Получить индекс автивного гена
+		const int* get_DNA() const;									//Получить указатель на ДНК
+		const int* get_linker() const;								//Получить указатель на линковщик
+		const int* get_fero() const;								//Получить указатель на феромоны
 
 		friend void CellSoup::init_actions();			
 	};

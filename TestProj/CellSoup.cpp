@@ -293,9 +293,11 @@ void CellSoup::tile_color_chаnge(tile* cur) {
 		break;
 	case CELL:
 		if (graph_style == 0) {
-			R = (double)cells[cur->cell].get_meat() / (double)(cells[cur->cell].get_meat() + cells[cur->cell].get_sun() + cells[cur->cell].get_minerals()) * 255;
-			G = (double)cells[cur->cell].get_sun() / (double)(cells[cur->cell].get_meat() + cells[cur->cell].get_sun() + cells[cur->cell].get_minerals()) * 255;
-			B = (double)cells[cur->cell].get_minerals() / (double)(cells[cur->cell].get_meat() + cells[cur->cell].get_sun() + cells[cur->cell].get_minerals()) * 255;
+			double all_cell_resources = static_cast<double>(cells[cur->cell].get_meat() + cells[cur->cell].get_sun() + cells[cur->cell].get_minerals());
+
+			R = static_cast<double>(cells[cur->cell].get_meat()) / all_cell_resources * 255;
+			G = static_cast<double>(cells[cur->cell].get_sun()) / all_cell_resources * 255;
+			B = static_cast<double>(cells[cur->cell].get_minerals()) / all_cell_resources * 255;
 			/*
 			if ((R > G) && (R > B)) {
 				float k = 255 / R;
@@ -329,6 +331,11 @@ void CellSoup::tile_color_chаnge(tile* cur) {
 			G = 0;
 			R = (double)cells[cur->cell].get_energy() / max_energy * 255;
 			B = 255.0 - ((double)cells[cur->cell].get_energy() / max_energy * 255);
+		}
+		if (graph_style == 3) {
+			R = cells[cur->cell].get_fero()[0] * 8;
+			G = cells[cur->cell].get_fero()[1] * 8;
+			B = cells[cur->cell].get_fero()[2] * 8;
 		}
 
 		Graphics->change_tile_color(R, G, B, cur->row, cur->col);
@@ -650,7 +657,7 @@ void CellSoup::generator() {
 	while (1) {
 		if (change_style) {
 			graph_style++;
-			graph_style %= 3;
+			graph_style %= 4;
 			change_style = false;
 			Sleep(10);
 			update_graphics();
@@ -804,6 +811,11 @@ CellSoup::Cell::Cell(const Cell &c1)
 	Core->obj_change(position, CELL, this);
 
 	Core->cells[ctr] = *this;
+}
+
+const CellSoup::Cell* CellSoup::Cell::get_neightbor()
+{
+	return (position->neighbors[dest]->obj_type == CELL) ? &Core->cells[position->neighbors[dest]->cell] : nullptr;
 }
 
 void CellSoup::Cell::operator()()
@@ -1049,7 +1061,8 @@ bool CellSoup::Cell::compare_fero(int address, int type, int)
 	if (position->neighbors[dest]->obj_type == CELL) {
 		bool is_brother = true;
 		for (int i = 0; i < 3; i++) {
-			if (DNA[this->feromones[i]] != Core->cells[position->neighbors[dest]->cell].feromones[i]) is_brother = false;
+			//if (DNA[this->feromones[i]] != Core->cells[position->neighbors[dest]->cell].feromones[i]) is_brother = false;
+			if (this->feromones[i] != get_neightbor()->get_fero()[i]) is_brother = false;
 		}
 		if (is_brother) {																											//Если различий не обнаружено, то изменяем адрес след. гена:
 			if (type % 2) p_ctr += address;																							//Случай относительной адресации
@@ -1225,54 +1238,59 @@ void CellSoup::Cell::set_ctr(int val)
 	ctr = val;
 }
 
-int CellSoup::Cell::get_ctr()
+int CellSoup::Cell::get_ctr() const
 {
 	return ctr;
 }
 
-int  CellSoup::Cell::get_meat()
+int  CellSoup::Cell::get_meat() const
 {
 	return meat;
 }
 
-int  CellSoup::Cell::get_sun()
+int  CellSoup::Cell::get_sun() const
 {
 	return sun;
 }
 
-int  CellSoup::Cell::get_minerals()
+int  CellSoup::Cell::get_minerals() const
 {
 	return minerals;
 }
 
-int  CellSoup::Cell::get_energy()
+int  CellSoup::Cell::get_energy() const
 {
 	return energy;
 }
 
-int CellSoup::Cell::get_dest()
+int CellSoup::Cell::get_dest() const
 {
 	return dest;
 }
 
-int CellSoup::Cell::get_craw()
+int CellSoup::Cell::get_craw() const
 {
 	return craw;
 }
 
-int CellSoup::Cell::get_p_ctr()
+int CellSoup::Cell::get_p_ctr() const
 {
 	return p_ctr;
 }
 
-int *CellSoup::Cell::get_DNA()
+const int *CellSoup::Cell::get_DNA() const
 {
 	return DNA;
 }
 
-int * CellSoup::Cell::get_linker()
+const int * CellSoup::Cell::get_linker() const
 {
 	return linker;
+}
+
+const int* CellSoup::Cell::get_fero() const
+{
+	return feromones;
 }
 
 
@@ -1347,19 +1365,4 @@ CellSoup::Perlen::~Perlen()
 	delete minerals;
 	delete radiation;
 }
-/*
-CellSoup::Perlen& CellSoup::Perlen::operator+(Perlen s1)
-{
-	Perlen tmp(rows, cols);
-	float r_scale = rows / s1.rows;
-	float c_scale = cols / s1.cols;
-	
-	for (int i = 0; i < rows; i++) {
-		for (int j = 0; j < cols; j++) {
-			
-		}
-	}
-	// TODO: вставьте здесь оператор return
-}
-*/
 
