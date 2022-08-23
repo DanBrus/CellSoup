@@ -47,9 +47,20 @@ private:
 	std::vector<Cell> cells;					  //Вектор клеток на поле
 	unsigned int rows 							  //Высота поля
 		,cols;									  //Ширина поля
-	int season_during 							  //Информация для управления симуляцией: Длительность сезона
-		,season_ctr 							  //Информация для управления симуляцией: Кол-во сезонов
-		,graph_style 							  //Информация для управления симуляцией: Текущий графический стиль
+	enum graph_style_t {							  
+		G_STYLE_CELLS,
+		G_STYLE_ENERGY,
+		G_STYLE_RESOURCES,
+		G_STYLE_FEROMON,
+		G_STYLE_ENERGY_TRANSFER
+	} graph_style;	  //Информация для управления симуляцией: Текущий графический стиль
+	enum season_ctr_t {
+		SEASON_SUMMER,
+		SEASON_AUTUMN,
+		SEASON_WINTER,
+		SEASON_SPRING
+	} season_ctr;		  //Информация для управления симуляцией: Кол-во сезонов
+	int season_duration 						  //Информация для управления симуляцией: Длительность сезона
 		,max_energy;							  //Информация для управления симуляцией: Макситальное кол-во энергии у клетки
 	static int start_energy 					  //Информация для управления симуляцией: Начальная энергия клетки
 		,olding_start 							  //Информация для управления симуляцией: Возраст начала старения клетки
@@ -137,7 +148,7 @@ public:
 		, Cell *new_cell						  //Новая клетка тайла
 	);											  
 	void obj_change(							  //Изменение объекта в тайле
-		tile *cur								  //Угазатель на тайл
+		tile *cur								  //Указатель на тайл
 		, int new_type							  //Тип нового объекта в тайле
 		, Cell *new_cell						  //Новая клетка тайла
 	);			
@@ -167,6 +178,8 @@ public:
 		int p_ctr;														//Индекс активного гена
 		unsigned int ctr;												//Индекс клетки
 		int feromones[3];												//Фенотип клетки
+		int energy_given;												//Кол-во переданной энергии
+		int energy_got;													//Кол-во полученной энергии
 		tile *position;													//Указатель на тайл, где находится клетка
 
 	public:			//Конструкторы и деструкторы
@@ -195,7 +208,7 @@ public:
 		bool cmp_DNA(int confidence, int address, int type);
 
 	public:			
-		const Cell* get_neightbor();					//Получить указатель на соседа (если есть)
+		Cell* get_neightbor();					//Получить указатель на соседа (если есть)
 		void operator()();								//Выполнить действие активного гена
 		void set_ctr(int val);							//Изменить активный ген
 		int get_ctr() const;									//Полусить индекс клетки
@@ -206,6 +219,8 @@ public:
 		int get_dest() const;									//Получить направление клетки
 		int get_craw() const;									//Получить апас минералов клетки
 		int get_p_ctr() const;								//Получить индекс автивного гена
+		int get_energy_got() const;								//Получить индекс автивного гена
+		int get_energy_given() const;								//Получить индекс автивного гена
 		const int* get_DNA() const;									//Получить указатель на ДНК
 		const int* get_linker() const;								//Получить указатель на линковщик
 		const int* get_fero() const;								//Получить указатель на феромоны

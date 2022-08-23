@@ -131,11 +131,11 @@ CellSoup::CellSoup(unsigned int rows, unsigned int cols, Field *Graphics, int su
 	this->sun = sun;
 	this->radiation = radiation;
 	this->minerals = minerals;
-	this->season_during = during;
-	this->graph_style = 0;
+	this->season_duration = during;
+	this->graph_style = G_STYLE_CELLS;
 	this->step_ctr = 0;
 	this->change_style = false;
-	season_ctr = 3;
+	season_ctr = SEASON_SPRING;
 	seasons_differents[0] = 1.0;
 	seasons_differents[1] = 0.9;
 	seasons_differents[2] = 0.8;
@@ -167,7 +167,7 @@ void CellSoup::init_actions()
 	CellSoup::Cell::cell_actions[10] = &CellSoup::Cell::heat;
 	CellSoup::Cell::cell_actions[11] = &CellSoup::Cell::photo;
 	CellSoup::Cell::cell_actions[12] = &CellSoup::Cell::dig;
-	CellSoup::Cell::cell_actions[13] = &CellSoup::Cell::cmp_DNA;
+	//CellSoup::Cell::cell_actions[13] = &CellSoup::Cell::cmp_DNA;
 	CellSoup::Cell::cell_actions[14] = &CellSoup::Cell::compare_fero;
 	CellSoup::Cell::cell_actions[15] = &CellSoup::Cell::mitose;
 	CellSoup::Cell::cell_actions[19] = &CellSoup::Cell::give_energy;
@@ -247,8 +247,11 @@ int CellSoup::change_rad(int new_max)
 
 int CellSoup::change_season()
 {
-	season_ctr++;
-	season_ctr %= 4;
+	int cur_season = static_cast<int>(season_ctr);
+	cur_season++;
+	cur_season %= 4;
+	season_ctr = static_cast<season_ctr_t>(cur_season);
+
 	change_sun((double)sun * seasons_differents[season_ctr]);
 	change_minerals((double)minerals * seasons_differents[season_ctr]);
 	change_rad((double)radiation * seasons_differents[season_ctr]);
@@ -276,8 +279,8 @@ int CellSoup::get_radiation(unsigned int ctr)
 }
 
 void CellSoup::tile_color_chànge(tile* cur) {
-	int R, G, B;
-	if (graph_style == 2) {
+	int R = 0, G = 0, B = 0;
+	if (graph_style == G_STYLE_RESOURCES) {
 		R = 50;
 		G = cur->sun_lvl / sun * 255;
 		B = cur->mineral_lvl / minerals * 255;
@@ -292,7 +295,7 @@ void CellSoup::tile_color_chànge(tile* cur) {
 		Graphics->change_tile_color(25, 25, 25, cur->row, cur->col);
 		break;
 	case CELL:
-		if (graph_style == 0) {
+		if (graph_style == G_STYLE_CELLS) {
 			double all_cell_resources = static_cast<double>(cells[cur->cell].get_meat() + cells[cur->cell].get_sun() + cells[cur->cell].get_minerals());
 
 			R = static_cast<double>(cells[cur->cell].get_meat()) / all_cell_resources * 255;
@@ -327,15 +330,23 @@ void CellSoup::tile_color_chànge(tile* cur) {
 			G %= 256;
 			B %= 256;
 		}
-		if (graph_style == 1) {
+		if (graph_style == G_STYLE_ENERGY) {
 			G = 0;
 			R = (double)cells[cur->cell].get_energy() / max_energy * 255;
 			B = 255.0 - ((double)cells[cur->cell].get_energy() / max_energy * 255);
 		}
-		if (graph_style == 3) {
+		if (graph_style == G_STYLE_FEROMON) {
 			R = cells[cur->cell].get_fero()[0] * 8;
 			G = cells[cur->cell].get_fero()[1] * 8;
 			B = cells[cur->cell].get_fero()[2] * 8;
+		}
+		if (graph_style == G_STYLE_ENERGY_TRANSFER) {
+			int energy_transfer_all = cells[cur->cell].get_energy_got() + cells[cur->cell].get_energy_given();
+			if (energy_transfer_all > 0) {
+				R = static_cast<double>(cells[cur->cell].get_energy_got()) / energy_transfer_all * 255;
+				G = static_cast<double>(cells[cur->cell].get_energy_given()) / energy_transfer_all * 255;
+			}
+			B = 125;
 		}
 
 		Graphics->change_tile_color(R, G, B, cur->row, cur->col);
@@ -656,8 +667,10 @@ void CellSoup::step() {
 void CellSoup::generator() {
 	while (1) {
 		if (change_style) {
-			graph_style++;
-			graph_style %= 4;
+			int cur_style = static_cast<int>(graph_style);
+			cur_style++;
+			cur_style %= 5;
+			graph_style = static_cast<graph_style_t>(cur_style);
 			change_style = false;
 			Sleep(10);
 			update_graphics();
@@ -667,13 +680,13 @@ void CellSoup::generator() {
 			if (!field_empty) {
 				if (!one_step) {
 					step_ctr++;
-					if (step_ctr % season_during == 0) change_season();
+					if (step_ctr % season_duration == 0) change_season();
 					step();
 					update_graphics();
 				}
 				else {
 					step_ctr++;
-					if (step_ctr % season_during == 0) change_season();
+					if (step_ctr % season_duration == 0) change_season();
 					step();
 					update_graphics();
 					one_step = false;
@@ -686,7 +699,7 @@ void CellSoup::generator() {
 			if (!field_empty) {
 				if (one_step) {
 					step_ctr++;
-					if (step_ctr % season_during == 0) change_season();
+					if (step_ctr % season_duration == 0) change_season();
 					step();
 					update_graphics();
 					one_step = false;
@@ -750,9 +763,11 @@ void CellSoup::Cl_17() {
 
 
 
-CellSoup::Cell::Cell(CellSoup * Core, tile * position, int dir, int * DNA, int * fero, int * linker, int energy, int type)
+CellSoup::Cell::Cell(CellSoup * Core, tile * position, int dir, int * DNA, int * fero, int * linker, int energy, int type) :
+	Core(Core), dest(dir), energy(energy), meat(1), minerals(1), sun(1), craw(0), position(position), p_ctr(0), energy_given(0), energy_got(0)
+
 {
-	this->Core = Core; this->dest = dir; this->energy = energy; this->meat = 1; this->minerals = 1; this->sun = 1; this->craw = 0; this->position = position; this->p_ctr = 0;
+	//this->Core = Core; this->dest = dir; this->energy = energy; this->meat = 1; this->minerals = 1; this->sun = 1; this->craw = 0; this->position = position; this->p_ctr = 0;
 	Cell *cur;
 	cur = &Core->cells[empty.back()];
 	ctr = empty.back();
@@ -813,7 +828,7 @@ CellSoup::Cell::Cell(const Cell &c1)
 	Core->cells[ctr] = *this;
 }
 
-const CellSoup::Cell* CellSoup::Cell::get_neightbor()
+CellSoup::Cell* CellSoup::Cell::get_neightbor()
 {
 	return (position->neighbors[dest]->obj_type == CELL) ? &Core->cells[position->neighbors[dest]->cell] : nullptr;
 }
@@ -1043,11 +1058,22 @@ bool CellSoup::Cell::give_energy(int oper, int, int)
 	if (!energy_paying(15, 0, 0))
 		return false;
 
+	int gift = static_cast<float>(oper) / 64 * (float)energy;
+
+	auto neightbor = get_neightbor();
+	if(!neightbor)  return false;
+	neightbor->energy += gift;
+	neightbor->energy_got += gift;
+
+	/*
 	tile* gift_addr = position->neighbors[dest];
 	if (gift_addr->obj_type != CELL) return false;
-	int gift = oper / 64 * 100 * (float)energy;
 	Core->cells[gift_addr->cell].energy += gift;
+	Core->cells[gift_addr->cell].energy_got += gift;
+	*/
+
 	energy -= gift;
+	energy_given += gift;
 
 	return true;
 }
@@ -1276,6 +1302,16 @@ int CellSoup::Cell::get_craw() const
 int CellSoup::Cell::get_p_ctr() const
 {
 	return p_ctr;
+}
+
+int CellSoup::Cell::get_energy_got() const
+{
+	return energy_got;
+}
+
+int CellSoup::Cell::get_energy_given() const
+{
+	return energy_given;
 }
 
 const int *CellSoup::Cell::get_DNA() const

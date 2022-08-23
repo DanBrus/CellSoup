@@ -7,7 +7,7 @@
 #include <windows.h>
 
 
-CellSimulator::CellSimulator()
+CellSimulator::CellSimulator() : i(-1), sizeH(-1), sizeW(-1)
 {
 	rows = 80;
 	cols = 100;

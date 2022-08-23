@@ -99,7 +99,7 @@ public:
 
 	Field(int rows, int cols, sf::Vector2u box);
 
-	Borders *get_borders() {		//Функция отвечает за полчение Borders для отрисовки
+	Borders *get_borders() {		//Функция отвечает за получение Borders для отрисовки
 		return &net;
 	}
 

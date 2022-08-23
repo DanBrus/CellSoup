@@ -251,7 +251,7 @@ void i_soup::controls_init()
 	tb_contexts.push_back(cur);
 
 	cur.title = std::string("Season duration");
-	cur.control_val = (float*)&Core->season_during;
+	cur.control_val = (float*)&Core->season_duration;
 	cur.is_int = 1;
 	cur.value = 300.0f;
 	tb_contexts.push_back(cur);
@@ -551,8 +551,6 @@ void i_soup::one_step()
 
 void i_soup::print_active_tile()
 {
-	CellSoup::Cell *cur;
-
 	for (int i = 0; i < 8; i++)
 		cell_info[i].setString(std::string("-"));
 	for (int i = 0; i < 64; i++)
@@ -561,7 +559,7 @@ void i_soup::print_active_tile()
 	if (active_tile == -1)
 		return;
 
-	cur = &Core->cells[Core->tiles[active_tile].cell];
+	CellSoup::Cell* cur = &Core->cells[Core->tiles[active_tile].cell];
 	const int *DNA = cur->get_DNA();
 	const int *linker = cur->get_linker();
 	switch (Core->tiles[active_tile].obj_type) {
@@ -654,8 +652,10 @@ void i_soup::draw(sf::RenderTarget & target, sf::RenderStates states) const
 		target.draw(buttons[i]);
 	*/
 	if (Core->field_empty)
+	{
 		for (int i = 0; i < controls_clean.size(); i++)
 			target.draw(*controls_clean[i]);
+	}
 	else
 	{
 		if (Core->is_run)
